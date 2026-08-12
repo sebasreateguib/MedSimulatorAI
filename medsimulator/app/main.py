@@ -1,0 +1,76 @@
+"""
+Punto de entrada principal para la aplicación FastAPI.
+"""
+import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from medsimulator.app.config import settings
+from medsimulator.app.api import simulacion, evaluacion
+from medsimulator.db import init_db, engine
+
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Manejador de ciclo de vida de la aplicación.
+    Se ejecuta al iniciar y detener la app.
+    """
+    logger.info("Iniciando aplicación y conectando a base de datos...")
+    # Inicializar la base de datos (crear tablas, extensión de vectores)
+    try:
+        await init_db()
+    except Exception as e:
+        logger.error(f"Error inicializando la base de datos: {e}")
+        
+    # Opcional: Inicializar Langfuse (requerido solo si se configura)
+    if settings.LANGFUSE_PUBLIC_KEY and settings.LANGFUSE_SECRET_KEY:
+        try:
+            from langfuse import Langfuse
+            # Mantener referencia global o inyectarla donde sea necesario
+            app.state.langfuse = Langfuse(
+                public_key=settings.LANGFUSE_PUBLIC_KEY,
+                secret_key=settings.LANGFUSE_SECRET_KEY,
+                host=settings.LANGFUSE_HOST
+            )
+            logger.info("Langfuse inicializado correctamente.")
+        except ImportError:
+            logger.warning("Langfuse no está instalado. Ejecute `pip install langfuse` para habilitar la observabilidad.")
+        except Exception as e:
+            logger.warning(f"No se pudo inicializar Langfuse: {e}")
+
+    yield
+
+    logger.info("Deteniendo aplicación y cerrando conexiones...")
+    # Cerrar el pool de conexiones de la base de datos
+    await engine.dispose()
+    logger.info("Conexiones de base de datos cerradas.")
+
+app = FastAPI(
+    title="MedSimulator AI",
+    description="Simulador médico impulsado por IA para entrenamiento de estudiantes.",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+# Configuración de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permitir todos los orígenes en desarrollo
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Incluir routers
+app.include_router(simulacion.router, prefix="/simulacion", tags=["Simulación"])
+app.include_router(evaluacion.router, prefix="/evaluacion", tags=["Evaluación"])
+
+@app.get("/health")
+async def health_check():
+    """
+    Endpoint de comprobación de estado (health check).
+    """
+    return {"status": "ok"}

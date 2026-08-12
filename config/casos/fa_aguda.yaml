@@ -1,0 +1,27 @@
+id: "fa_aguda_001"
+titulo: "Fibrilación Auricular Aguda"
+paciente:
+  nombre: "Carlos Mendoza"
+  edad: 68
+  genero: "Masculino"
+  historia_oculta: "El paciente ha estado bebiendo alcohol en exceso durante el fin de semana por el matrimonio de su hija, lo que precipitó la crisis (Holiday Heart Syndrome). No mencionará el alcohol a menos que se le pregunte directamente de forma empática."
+  sintomas:
+    - Palpitaciones rápidas e irregulares
+    - Falta de aire leve
+    - Sensación de angustia
+  estado_emocional: "Ansioso, preocupado de estar teniendo un infarto."
+resultados_laboratorio:
+  hemograma: "Dentro de rangos normales"
+  electrolitos: "Potasio levemente bajo (3.4 mEq/L), Magnesio (1.6 mg/dL)"
+  troponinas: "Negativas"
+  perfil_tiroideo: "TSH normal"
+hallazgos_ecg: "Ritmo irregularmente irregular, ausencia de ondas P, frecuencia ventricular media de 135 lpm. Complejos QRS estrechos."
+diagnostico_correcto: "Fibrilación Auricular Aguda (posible Holiday Heart Syndrome)"
+criterios_diagnosticos:
+  - "Identificación de ritmo irregular en ECG"
+  - "Ausencia de ondas P"
+  - "Reconocimiento de desencadenante (alcohol/estrés)"
+plan_tratamiento_esperado:
+  - "Control de frecuencia cardíaca (Betabloqueadores o Calcioantagonistas)"
+  - "Evaluación de riesgo tromboembólico (CHA2DS2-VASc)"
+  - "Reposición de electrolitos (Magnesio/Potasio)"

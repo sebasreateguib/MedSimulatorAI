@@ -1,0 +1,3 @@
+"""
+Inicialización del paquete medsimulator.
+"""
