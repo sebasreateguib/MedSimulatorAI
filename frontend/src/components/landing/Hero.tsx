@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useEsAngosto } from '../../hooks/useEsAngosto'
 import Strands from '../wave'
 
 /**
@@ -6,6 +7,19 @@ import Strands from '../wave'
  * Los strands son luz aditiva — solo leen bien sobre la placa oscura.
  */
 const PALETA = ['#EDE5D7', '#C4523F', '#A6702A', '#4A6B56']
+
+/**
+ * El shader normaliza las coordenadas por la ALTURA del lienzo, así que en una
+ * pantalla angosta `uv.x` apenas llega a ±0.23 y la envolvente
+ * `cos(uv.x · π · 1.3)` —que recién se cierra en |uv.x| ≥ 0.385— nunca toca
+ * cero: la onda sale cortada por los dos costados.
+ *
+ * Bajar `scale` divide menos las coordenadas y hace que el ahusado entre en
+ * pantalla. 0.6 es el techo que sale de esa cuenta (0.231 / 0.385); la
+ * amplitud sube para compensar la figura más chica.
+ */
+const ONDA_ANCHA = { scale: 1.3, amplitude: 1.2, thickness: 0.62, count: 5 }
+const ONDA_ANGOSTA = { scale: 0.58, amplitude: 1.5, thickness: 0.74, count: 4 }
 
 /**
  * Constantes al ingreso del caso I (config/casos/fa_aguda.yaml).
@@ -35,6 +49,8 @@ interface Props {
 
 export function Hero({ onEntrar }: Props) {
   const [animar, setAnimar] = useState(false)
+  const angosto = useEsAngosto()
+  const onda = angosto ? ONDA_ANGOSTA : ONDA_ANCHA
 
   // El hero es un canvas WebGL en loop: si el sistema pide menos movimiento,
   // no lo montamos y queda el grabado estático de respaldo.
@@ -55,16 +71,16 @@ export function Hero({ onEntrar }: Props) {
             <Strands
               className="placa__strands"
               colors={PALETA}
-              count={5}
+              count={onda.count}
               speed={0.32}
-              amplitude={1.2}
+              amplitude={onda.amplitude}
               waviness={1.05}
-              thickness={0.62}
+              thickness={onda.thickness}
               glow={2.5}
               taper={2.4}
               intensity={0.72}
               saturation={1.25}
-              scale={1.3}
+              scale={onda.scale}
             />
           )}
         </div>
@@ -76,7 +92,7 @@ export function Hero({ onEntrar }: Props) {
 
         <div className="placa__contenido">
           <p className="placa__rotulo" style={{ animationDelay: '0.05s' }}>
-            Lámina I · Anamnesis, estudios e interconsulta
+            Simulador Clínico IA · Razonamiento diagnóstico en tiempo real
           </p>
 
           <h1 className="hero__titulo">

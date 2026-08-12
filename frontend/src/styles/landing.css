@@ -117,7 +117,7 @@ html:has(.landing) {
 /* La cabecera es fija: los anclas tienen que dejarle su altura. */
 #procedimiento,
 #recorrido,
-#servicios {
+#tecnologias {
   scroll-margin-top: 92px;
 }
 
@@ -546,6 +546,32 @@ html:has(.landing) {
   border-bottom: none;
 }
 
+/* ── Bandas de medio tono ─────────────────────────────────────────────
+   El fondo tiene que llegar a los bordes de la ventana, pero la sección
+   vive dentro de un contenedor con ancho máximo. En vez de romper ese
+   contenedor, se pinta con una sombra de 100vmax y se recorta solo en
+   vertical: no toca el layout ni genera scroll horizontal.
+   ------------------------------------------------------------------- */
+.seccion--tono {
+  background: var(--papel-hueso);
+  box-shadow: 0 0 0 100vmax var(--papel-hueso);
+  clip-path: inset(0 -100vmax);
+  border-bottom-color: transparent;
+}
+
+/* Sobre medio tono, lo que era papel pasa a ser el tono más hondo. */
+.seccion--tono .dg-caja {
+  fill: var(--papel-hondo);
+}
+
+.seccion--tono .tec:not(:last-child)::after {
+  background: var(--papel-hueso);
+}
+
+.seccion--tono .stack-marco::after {
+  background: linear-gradient(90deg, transparent, var(--papel-hueso) 78%);
+}
+
 .seccion__cabecera {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
@@ -750,6 +776,21 @@ html:has(.landing) {
   height: auto;
 }
 
+/* La versión en columna entra entera: sin mínimo y sin scroll horizontal. */
+.diagrama--vertical {
+  min-width: 0;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.dg-nodo--compacto .dg-nombre {
+  font-size: 19px;
+}
+
+.dg-nodo--compacto .dg-sub {
+  font-size: 9.5px;
+}
+
 /* ── Nodos ── */
 .dg-caja {
   fill: var(--papel-hueso);
@@ -867,54 +908,160 @@ html:has(.landing) {
   }
 }
 
-/* ── Servicios ────────────────────────────────────────────────────── */
-/* Filetes por borde y no por `gap` sobre fondo: con 5 grupos en 4 columnas,
-   las celdas vacías de la última fila dejaban ver el fondo como un bloque. */
-.servicios {
+/* ── Tecnologías ──────────────────────────────────────────────────────
+   Tarjetas numeradas encadenadas. El acento rota entre los tres colores
+   que ya tiene el sistema —óxido, ámbar, verde— en vez de sumar una paleta
+   nueva: da ritmo a la fila sin romper la identidad de la página.
+   ------------------------------------------------------------------- */
+.stack-marco {
+  position: relative;
+}
+
+/* Difuminado al borde: avisa que la fila sigue más allá del corte. */
+.stack-marco::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 8px;
+  right: 0;
+  width: 72px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--papel) 78%);
+}
+
+/* Con overflow-x: auto el navegador computa overflow-y como auto, no visible:
+   sin este padding, el translateY(-3px) del hover se recorta contra el borde. */
+.stack-scroll {
+  overflow-x: auto;
+  padding: 8px 0 10px;
+  margin-top: -8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tinta-tenue) transparent;
+}
+
+.stack {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: grid;
-  /* 205px deja entrar los cinco grupos en una sola fila a ancho completo. */
-  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(238px, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+
+.tec {
+  position: relative;
+  padding: 22px 22px 26px;
+  border: 1px solid var(--linea-fuerte);
+  background: linear-gradient(180deg, var(--lavado), transparent 46%);
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.tec:hover {
+  border-color: var(--acento);
+  transform: translateY(-3px);
+}
+
+.tec--oxido {
+  --acento: var(--oxido);
+  --lavado: rgb(163 50 36 / 0.06);
+}
+
+.tec--ambar {
+  --acento: var(--ambar);
+  --lavado: rgb(166 112 42 / 0.06);
+}
+
+.tec--verde {
+  --acento: var(--verde);
+  --lavado: rgb(74 107 86 / 0.06);
+}
+
+/* Número con su regla, como en una lámina numerada. */
+.tec__n {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 26px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--acento);
+}
+
+.tec__n::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+/* Cadena entre tarjetas: el filete cruza el hueco y el rombo marca la unión. */
+.tec:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 33px;
+  right: -21px;
+  width: 21px;
+  height: 1px;
+  background: var(--linea-fuerte);
+}
+
+.tec:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 29px;
+  right: -14px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--linea-fuerte);
   background: var(--papel);
-  border-top: 1px solid var(--linea-fuerte);
-  border-left: 1px solid var(--linea-fuerte);
+  transform: rotate(45deg);
 }
 
-.servicio {
-  padding: 22px 22px 24px;
-  border-right: 1px solid var(--linea-fuerte);
-  border-bottom: 1px solid var(--linea-fuerte);
-}
-
-.servicio__grupo {
-  margin: 0 0 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--oxido);
+.tec__capa {
+  margin: 0 0 6px;
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--oxido);
+  color: var(--acento);
 }
 
-.servicio__lista {
-  margin: 0;
-  display: grid;
-  gap: 14px;
-}
-
-.servicio__lista dt {
+.tec__principal {
+  margin: 0 0 18px;
   font-family: var(--serif-display);
-  font-size: 19px;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
+  font-size: clamp(26px, 2.6vw, 33px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
 }
 
-.servicio__lista dd {
-  margin: 2px 0 0;
-  font-size: 14px;
-  line-height: 1.45;
+.tec__resto {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+}
+
+.tec__resto li {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.4;
   color: var(--tinta-media);
+  overflow-wrap: anywhere;
+}
+
+.tec__resto li::before {
+  content: '·';
+  margin-right: 7px;
+  color: var(--acento);
 }
 
 /* ── Cita verificada ──────────────────────────────────────────────── */

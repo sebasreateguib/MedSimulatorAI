@@ -71,48 +71,52 @@ const AGENTES = [
   },
 ]
 
-const SERVICIOS = [
+/**
+ * Stack real, tomado de requirements.txt, pyproject.toml, docker-compose.yml
+ * y package.json. Solo nombres: el porqué de cada elección está en § III.
+ */
+const STACK = [
   {
-    grupo: 'Modelos',
-    items: [
-      { nombre: 'Groq', rol: 'Paciente y router. Cientos de tokens por segundo.' },
-      { nombre: 'OpenRouter', rol: 'Especialista, con DeepSeek V3.' },
-      { nombre: 'Anthropic', rol: 'Validador y tutor: citations y rúbrica estructurada.' },
-    ],
+    n: '01',
+    capa: 'API',
+    principal: 'FastAPI',
+    resto: ['Python 3.10+', 'Uvicorn', 'Pydantic', 'pydantic-settings', 'httpx'],
+    tono: 'oxido',
   },
   {
-    grupo: 'Datos',
-    items: [
-      { nombre: 'PostgreSQL + pgvector', rol: 'Sesiones, transcripciones y vectores en un motor.' },
-      { nombre: 'SQLAlchemy + asyncpg', rol: 'Acceso asíncrono.' },
-      { nombre: 'Alembic', rol: 'Migraciones versionadas.' },
-    ],
+    n: '02',
+    capa: 'Modelos',
+    principal: 'Anthropic',
+    resto: ['openai SDK', 'Groq', 'OpenRouter'],
+    tono: 'ambar',
   },
   {
-    grupo: 'Corpus',
-    items: [
-      { nombre: 'Docling', rol: 'Parsing de PDF que respeta la estructura de las tablas.' },
-      { nombre: 'bge-m3', rol: 'Embeddings multilingües, locales.' },
-      { nombre: 'bge-reranker-v2-m3', rol: 'Reordena los candidatos finales.' },
-      { nombre: 'rank-bm25', rol: 'Coincidencia léxica exacta: CHA₂DS₂-VASc, NYHA III.' },
-    ],
+    n: '03',
+    capa: 'Datos',
+    principal: 'PostgreSQL',
+    resto: ['pgvector', 'SQLAlchemy', 'asyncpg', 'Alembic'],
+    tono: 'verde',
   },
   {
-    grupo: 'Fuentes',
-    items: [
-      { nombre: 'GPC nacionales', rol: 'MINSA e IETSI Perú, CENETEC México.' },
-      { nombre: 'GPC internacionales', rol: 'NICE, WHO, AHA/ACC, ESC, ADA.' },
-      { nombre: 'PubMed + PMC OA', rol: 'Evidencia reciente y texto completo con licencia abierta.' },
-      { nombre: 'openFDA', rol: 'Labels de fármacos e interacciones.' },
-    ],
+    n: '04',
+    capa: 'RAG',
+    principal: 'Docling',
+    resto: ['sentence-transformers', 'bge-m3', 'FlagEmbedding', 'rank-bm25'],
+    tono: 'oxido',
   },
   {
-    grupo: 'Plataforma',
-    items: [
-      { nombre: 'FastAPI + Pydantic', rol: 'API y validación de esquemas.' },
-      { nombre: 'Langfuse', rol: 'Observabilidad y costo por sesión.' },
-      { nombre: 'Vite + React', rol: 'Cliente con streaming token a token por SSE.' },
-    ],
+    n: '05',
+    capa: 'Cliente',
+    principal: 'React',
+    resto: ['TypeScript', 'Vite', 'ogl', 'SSE'],
+    tono: 'ambar',
+  },
+  {
+    n: '06',
+    capa: 'Operación',
+    principal: 'Docker',
+    resto: ['Langfuse', 'pytest', 'pytest-asyncio', 'oxlint'],
+    tono: 'verde',
   },
 ]
 
@@ -186,7 +190,7 @@ export function Landing({ onEntrar }: Props) {
         </section>
 
         {/* § II ── Recorrido de un turno (diagrama) */}
-        <section id="recorrido" className="seccion">
+        <section id="recorrido" className="seccion seccion--tono">
           <header className="seccion__cabecera" data-revelar>
             <p className="seccion__marca">§ II</p>
             <h2 className="seccion__titulo">Qué pasa entre la pregunta y la respuesta</h2>
@@ -266,31 +270,32 @@ export function Landing({ onEntrar }: Props) {
           </div>
         </section>
 
-        {/* § V ── Servicios */}
-        <section id="servicios" className="seccion">
+        {/* § V ── Tecnologías */}
+        <section id="tecnologias" className="seccion seccion--tono">
           <header className="seccion__cabecera" data-revelar>
             <p className="seccion__marca">§ V</p>
-            <h2 className="seccion__titulo">Con qué está hecho</h2>
-            <p className="seccion__bajada">
-              Sin frameworks de orquestación en el medio. Lo que aportarían — el loop de agente y el
-              pegamento de RAG — son las piezas que este proyecto necesita tocar a mano.
-            </p>
+            <h2 className="seccion__titulo">Tecnologías</h2>
           </header>
 
-          <div className="servicios">
-            {SERVICIOS.map((grupo) => (
-              <section key={grupo.grupo} className="servicio" data-revelar>
-                <h3 className="servicio__grupo">{grupo.grupo}</h3>
-                <dl className="servicio__lista">
-                  {grupo.items.map((item) => (
-                    <div key={item.nombre}>
-                      <dt>{item.nombre}</dt>
-                      <dd>{item.rol}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
-            ))}
+          <div className="stack-marco" data-revelar>
+            <div className="stack-scroll">
+              <ol className="stack">
+                {STACK.map((capa) => (
+                  <li key={capa.n} className={`tec tec--${capa.tono}`}>
+                    <p className="tec__n">
+                      <span>{capa.n}</span>
+                    </p>
+                    <p className="tec__capa">{capa.capa}</p>
+                    <h3 className="tec__principal">{capa.principal}</h3>
+                    <ul className="tec__resto">
+                      {capa.resto.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ol>
+            </div>
           </div>
         </section>
 
