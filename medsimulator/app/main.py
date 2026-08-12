@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from medsimulator.app.config import settings
-from medsimulator.app.api import simulacion, evaluacion
+from medsimulator.app.api import auth, simulacion, evaluacion
 from medsimulator.db import init_db, engine
 
 logger = logging.getLogger(__name__)
@@ -55,16 +55,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configuración de CORS
+# Configuración de CORS.
+# Con autenticación por token no se puede dejar allow_origins=["*"]: habilitaría
+# a cualquier sitio a llamar la API desde el navegador de un usuario logueado.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permitir todos los orígenes en desarrollo
+    allow_origins=settings.cors_origins_lista,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Incluir routers
+app.include_router(auth.router, prefix="/auth", tags=["Autenticación"])
 app.include_router(simulacion.router, prefix="/simulacion", tags=["Simulación"])
 app.include_router(evaluacion.router, prefix="/evaluacion", tags=["Evaluación"])
 

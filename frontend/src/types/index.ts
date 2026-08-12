@@ -57,3 +57,28 @@ export interface EvaluacionMockResponse {
 export type EvaluacionResponse = Partial<EvaluacionClinica> & Partial<EvaluacionMockResponse>
 
 export type EstadoSesion = 'inactiva' | 'iniciando' | 'activa' | 'finalizando' | 'finalizada'
+
+/** Usuario autenticado tal como lo devuelve el backend (sin el hash). */
+export interface UsuarioPublico {
+  id: number
+  username: string
+  email: string
+}
+
+/** Respuesta de POST /auth/login y /auth/registro. */
+export interface TokenResponse {
+  access_token: string
+  token_type: string
+  usuario: UsuarioPublico
+}
+
+/** Una fila del historial de sesiones pasadas del usuario (GET /simulacion/historial). */
+export interface SesionHistorial {
+  sesion_id: string
+  caso_id: string | null
+  caso_titulo: string
+  paciente_nombre: string | null
+  estado: 'activa' | 'finalizada' | string
+  puntaje: number | null
+  created_at: string
+}

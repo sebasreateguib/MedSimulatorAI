@@ -20,7 +20,11 @@ dependencies = [
     "rank-bm25",
     "httpx",
     "langfuse",
-    "alembic"
+    "alembic",
+    "langchain-text-splitters",
+    "pyjwt",
+    "bcrypt",
+    "email-validator"
 ]
 
 [project.optional-dependencies]

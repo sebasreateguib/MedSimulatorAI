@@ -2,4 +2,4 @@ paciente:    {provider: groq,       model: llama-3.3-70b-versatile, temperature:
 router:      {provider: groq,       model: llama-3.1-8b-instant,    temperature: 0.0}
 tutor:       {provider: anthropic,  model: claude-opus-5, effort: high}
 validador:   {provider: anthropic,  model: claude-opus-5, citations: true}
-especialista:{provider: openrouter, model: deepseek/deepseek-chat}
+especialista: {provider: openrouter, model: deepseek/deepseek-chat}

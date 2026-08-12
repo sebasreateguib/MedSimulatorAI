@@ -259,9 +259,10 @@ html:has(.landing) {
 
 .placa__strands {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: -5%;
+  width: 110%;
+  height: 110%;
+  filter: blur(6px);
 }
 
 /* Viñeta: hunde los bordes para que el texto gane siempre. */
@@ -274,43 +275,6 @@ html:has(.landing) {
   background:
     linear-gradient(100deg, var(--placa) 12%, rgb(20 18 15 / 0.55) 46%, transparent 76%),
     radial-gradient(120% 90% at 50% 50%, transparent 42%, rgb(20 18 15 / 0.72) 100%);
-}
-
-/* Marcas de registro, como una lámina lista para imprenta. */
-.placa__marca {
-  position: absolute;
-  width: 17px;
-  height: 17px;
-  border: 0 solid rgb(237 229 215 / 0.42);
-  z-index: 2;
-}
-
-.placa__marca--si {
-  top: 20px;
-  left: 20px;
-  border-top-width: 1px;
-  border-left-width: 1px;
-}
-
-.placa__marca--sd {
-  top: 20px;
-  right: 20px;
-  border-top-width: 1px;
-  border-right-width: 1px;
-}
-
-.placa__marca--ii {
-  bottom: 20px;
-  left: 20px;
-  border-bottom-width: 1px;
-  border-left-width: 1px;
-}
-
-.placa__marca--id {
-  bottom: 20px;
-  right: 20px;
-  border-bottom-width: 1px;
-  border-right-width: 1px;
 }
 
 .placa__contenido {
@@ -1331,13 +1295,6 @@ html:has(.landing) {
 
   .constantes {
     margin-top: -22px;
-  }
-
-  /* En pantallas chicas las marcas superiores chocan con la cabecera:
-     se ocultan y la cabecera recupera su altura compacta. */
-  .placa__marca--si,
-  .placa__marca--sd {
-    display: none;
   }
 
   .landing__nav--tope {

@@ -85,11 +85,6 @@ export function Hero({ onEntrar }: Props) {
           )}
         </div>
 
-        <span className="placa__marca placa__marca--si" aria-hidden="true" />
-        <span className="placa__marca placa__marca--sd" aria-hidden="true" />
-        <span className="placa__marca placa__marca--ii" aria-hidden="true" />
-        <span className="placa__marca placa__marca--id" aria-hidden="true" />
-
         <div className="placa__contenido">
           <p className="placa__rotulo" style={{ animationDelay: '0.05s' }}>
             Simulador Clínico IA · Razonamiento diagnóstico en tiempo real
@@ -123,9 +118,6 @@ export function Hero({ onEntrar }: Props) {
           </div>
         </div>
 
-        <p className="placa__pie" aria-hidden="true">
-          Fig. 1 — Ondas de interrogatorio, registro continuo
-        </p>
       </div>
 
       {/* Constantes al ingreso: rompe el borde de la lámina y cae sobre el papel. */}

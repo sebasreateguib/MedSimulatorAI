@@ -14,5 +14,9 @@ rank-bm25
 httpx
 langfuse
 alembic
+langchain-text-splitters
+pyjwt
+bcrypt
+email-validator
 pytest
 pytest-asyncio

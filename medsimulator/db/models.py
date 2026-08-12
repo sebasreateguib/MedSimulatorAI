@@ -19,8 +19,10 @@ class Usuario(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     username: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    # Hash bcrypt de la contraseña. Nunca se guarda ni se devuelve la contraseña en claro.
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
-    
+
     sesiones = relationship("Sesion", back_populates="usuario")
     
     def __repr__(self) -> str:

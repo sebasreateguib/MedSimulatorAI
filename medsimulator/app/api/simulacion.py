@@ -3,6 +3,9 @@ Router para los endpoints de simulación médica.
 
 Conecta los endpoints HTTP con el Orchestrator real que coordina
 paciente, router, especialista y tutor.
+
+Todas las rutas exigen un JWT válido: el usuario sale del token, nunca del
+cuerpo del request, y cada sesión se verifica contra su dueño.
 """
 import logging
 from fastapi import APIRouter, HTTPException, Depends
@@ -11,6 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from medsimulator.app.dependencias import sesion_del_usuario, usuario_actual
 from medsimulator.db import get_db
 from medsimulator.db.models import Sesion, Evaluacion, Usuario
 from medsimulator.agents.orchestrator import Orchestrator
@@ -28,7 +32,6 @@ _orchestrators: dict[int, Orchestrator] = {}
 
 class IniciarSesionRequest(BaseModel):
     caso_id: str
-    usuario_id: int
 
 class TurnoRequest(BaseModel):
     sesion_id: int
@@ -41,24 +44,15 @@ class FinalizarRequest(BaseModel):
 # ── Endpoints ────────────────────────────────────────────────────────
 
 @router.post("/iniciar")
-async def iniciar_sesion(request: IniciarSesionRequest, db: AsyncSession = Depends(get_db)):
+async def iniciar_sesion(
+    request: IniciarSesionRequest,
+    usuario: Usuario = Depends(usuario_actual),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Inicia una nueva sesión de simulación con un caso clínico específico.
     Crea el Orchestrator, carga el caso y registra la sesión en la base de datos.
     """
-    # Verificar o crear usuario
-    usuario_result = await db.execute(select(Usuario).where(Usuario.id == request.usuario_id))
-    usuario = usuario_result.scalar_one_or_none()
-
-    if not usuario:
-        usuario = Usuario(
-            id=request.usuario_id,
-            username=f"user_{request.usuario_id}",
-            email=f"user{request.usuario_id}@test.com",
-        )
-        db.add(usuario)
-        await db.flush()
-
     # Crear orquestador e iniciar sesión con el caso
     orchestrator = Orchestrator()
     try:
@@ -72,7 +66,7 @@ async def iniciar_sesion(request: IniciarSesionRequest, db: AsyncSession = Depen
         logger.error(f"Error iniciando sesión: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno al cargar el caso.")
 
-    # Persistir sesión en BD
+    # Persistir sesión en BD, siempre a nombre del usuario autenticado
     nueva_sesion = Sesion(
         usuario_id=usuario.id,
         estado="activa",
@@ -84,28 +78,31 @@ async def iniciar_sesion(request: IniciarSesionRequest, db: AsyncSession = Depen
 
     # Guardar orquestador en memoria
     _orchestrators[nueva_sesion.id] = orchestrator
-    logger.info(f"Sesión {nueva_sesion.id} iniciada para caso '{request.caso_id}'")
+    logger.info(
+        f"Sesión {nueva_sesion.id} iniciada para caso '{request.caso_id}' "
+        f"(usuario {usuario.id})"
+    )
 
     return {
         "mensaje": "Sesión iniciada correctamente",
         "sesion_id": nueva_sesion.id,
-        "caso_nombre": orchestrator.caso.get("nombre", "Desconocido"),
+        "caso_nombre": orchestrator.caso.get("titulo", "Desconocido"),
         "mensaje_inicial": info_sesion.get("mensaje_inicial", ""),
     }
 
 
 @router.post("/turno")
-async def procesar_turno(request: TurnoRequest, db: AsyncSession = Depends(get_db)):
+async def procesar_turno(
+    request: TurnoRequest,
+    usuario: Usuario = Depends(usuario_actual),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Procesa el turno de un estudiante y devuelve la respuesta
     en formato SSE (Server-Sent Events) token por token.
     """
-    # Validar sesión en BD
-    sesion_result = await db.execute(select(Sesion).where(Sesion.id == request.sesion_id))
-    sesion = sesion_result.scalar_one_or_none()
+    sesion = await sesion_del_usuario(request.sesion_id, usuario, db)
 
-    if not sesion:
-        raise HTTPException(status_code=404, detail="Sesión no encontrada.")
     if sesion.estado != "activa":
         raise HTTPException(status_code=400, detail="La sesión no está activa.")
 
@@ -134,15 +131,16 @@ async def procesar_turno(request: TurnoRequest, db: AsyncSession = Depends(get_d
 
 
 @router.post("/finalizar")
-async def finalizar_sesion(request: FinalizarRequest, db: AsyncSession = Depends(get_db)):
+async def finalizar_sesion(
+    request: FinalizarRequest,
+    usuario: Usuario = Depends(usuario_actual),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Finaliza la sesión de simulación y desencadena la evaluación del tutor.
     """
-    sesion_result = await db.execute(select(Sesion).where(Sesion.id == request.sesion_id))
-    sesion = sesion_result.scalar_one_or_none()
+    sesion = await sesion_del_usuario(request.sesion_id, usuario, db)
 
-    if not sesion:
-        raise HTTPException(status_code=404, detail="Sesión no encontrada.")
     if sesion.estado == "finalizada":
         raise HTTPException(status_code=400, detail="La sesión ya se encuentra finalizada.")
 
@@ -176,3 +174,33 @@ async def finalizar_sesion(request: FinalizarRequest, db: AsyncSession = Depends
         "sesion_id": request.sesion_id,
         "evaluacion": evaluacion_obj.model_dump(),
     }
+
+
+@router.get("/historial")
+async def obtener_historial(
+    usuario: Usuario = Depends(usuario_actual),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Lista las sesiones pasadas del usuario autenticado junto con el puntaje de
+    su evaluación (si ya fue finalizada), de más reciente a más antigua.
+    """
+    result = await db.execute(
+        select(Sesion, Evaluacion)
+        .outerjoin(Evaluacion, Evaluacion.sesion_id == Sesion.id)
+        .where(Sesion.usuario_id == usuario.id)
+        .order_by(Sesion.created_at.desc())
+    )
+
+    return [
+        {
+            "sesion_id": sesion.id,
+            "caso_id": (sesion.caso_data or {}).get("id"),
+            "caso_titulo": (sesion.caso_data or {}).get("titulo", "Caso sin título"),
+            "paciente_nombre": (sesion.caso_data or {}).get("paciente", {}).get("nombre"),
+            "estado": sesion.estado,
+            "puntaje": evaluacion.puntaje if evaluacion else None,
+            "created_at": sesion.created_at.isoformat(),
+        }
+        for sesion, evaluacion in result.all()
+    ]

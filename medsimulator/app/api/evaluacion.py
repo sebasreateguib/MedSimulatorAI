@@ -6,8 +6,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from medsimulator.app.dependencias import sesion_del_usuario, usuario_actual
 from medsimulator.db import get_db
-from medsimulator.db.models import Sesion, Evaluacion
+from medsimulator.db.models import Evaluacion, Usuario
 from medsimulator.llm.schemas import EvaluacionClinica
 
 logger = logging.getLogger(__name__)
@@ -15,17 +16,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/{sesion_id}")
-async def obtener_evaluacion(sesion_id: int, db: AsyncSession = Depends(get_db)):
+async def obtener_evaluacion(
+    sesion_id: int,
+    usuario: Usuario = Depends(usuario_actual),
+    db: AsyncSession = Depends(get_db),
+):
     """
-    Obtiene el scorecard o evaluación detallada de una sesión finalizada.
+    Obtiene el scorecard o evaluación detallada de una sesión finalizada
+    perteneciente al usuario autenticado.
     """
-    # Verificar si la sesión existe
-    sesion_result = await db.execute(select(Sesion).where(Sesion.id == sesion_id))
-    sesion = sesion_result.scalar_one_or_none()
-    
-    if not sesion:
-        logger.warning(f"Intento de obtener evaluación para sesión inexistente: {sesion_id}")
-        raise HTTPException(status_code=404, detail="Sesión no encontrada.")
+    # Valida existencia y propiedad en un solo paso.
+    sesion = await sesion_del_usuario(sesion_id, usuario, db)
 
     # Obtener evaluación
     eval_result = await db.execute(select(Evaluacion).where(Evaluacion.sesion_id == sesion_id))
@@ -37,7 +38,7 @@ async def obtener_evaluacion(sesion_id: int, db: AsyncSession = Depends(get_db))
         else:
             # Caso anómalo: sesión finalizada pero sin evaluación generada
             raise HTTPException(status_code=404, detail="Evaluación no encontrada para esta sesión.")
-            
+
     # Si tenemos el objeto de evaluación clínica en formato JSON (como debería estar en nuestro modelo)
     eval_data = evaluacion.evaluacion_clinica
     if eval_data:
@@ -52,7 +53,7 @@ async def obtener_evaluacion(sesion_id: int, db: AsyncSession = Depends(get_db))
                 "feedback": evaluacion.feedback,
                 "datos_crudos": eval_data
             }
-            
+
     return {
         "sesion_id": sesion_id,
         "score_general": evaluacion.puntaje,

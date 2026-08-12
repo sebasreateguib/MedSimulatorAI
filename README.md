@@ -412,14 +412,16 @@ medsimulator/
 
 ## 11. Setup
 
-```bash
-# Backend
-uv venv && source .venv/bin/activate
-uv pip install -r requirements.txt
+Todos los comandos de backend corren **desde la raíz del repo**: los imports son
+absolutos (`from medsimulator.app...`), así que el paquete tiene que resolverse
+desde ahí.
 
-# Postgres con pgvector
-docker compose up -d db
-alembic upgrade head
+### Primera vez
+
+```bash
+# Entorno virtual — vive en medsimulator/.venv
+uv venv medsimulator/.venv && source medsimulator/.venv/bin/activate
+uv pip install -r requirements.txt
 
 # Variables de entorno
 cp .env.example .env
@@ -429,14 +431,36 @@ cp .env.example .env
 #   DATABASE_URL=
 #   LANGFUSE_PUBLIC_KEY= / LANGFUSE_SECRET_KEY=
 
-# Ingesta del corpus
-python -m rag.ingesta.run --fuente gpc --path ./corpus/gpc/
-
-# Servidor
-uvicorn app.main:app --reload
-
 # Frontend
-cd frontend && npm install && npm run dev
+cd frontend && npm install && cd ..
+```
+
+### Levantar el proyecto
+
+```bash
+# 1. Postgres con pgvector (dejarlo corriendo; `docker ps` para verificar)
+docker compose up -d db
+
+# 2. Backend — puerto 8000, que es lo que proxea el frontend
+source medsimulator/.venv/bin/activate
+uvicorn medsimulator.app.main:app --reload --port 8000
+
+# 3. Frontend — puerto 5173, en otra terminal
+cd frontend && npm run dev
+```
+
+El esquema lo crea `init_db()` en el lifespan de FastAPI al arrancar (tablas +
+extensión `vector`); no hace falta correr migraciones. `alembic.ini` ya apunta a
+`medsimulator/db/migrations`, pero ese directorio está vacío: las migraciones
+todavía no están inicializadas, así que `alembic upgrade head` no corre.
+
+El frontend pega a `/api` y Vite lo proxea a `http://localhost:8000`. Para
+apuntar a otro backend, `VITE_API_PROXY_TARGET` en `frontend/.env`.
+
+### Ingesta del corpus
+
+```bash
+python -m medsimulator.rag.ingesta.run --fuente gpc --path ./corpus/gpc/
 ```
 
 ---

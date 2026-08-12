@@ -4,7 +4,11 @@ import type {
   EvaluacionResponse,
   FinalizarSesionResponse,
   IniciarSesionResponse,
+  SesionHistorial,
+  TokenResponse,
+  UsuarioPublico,
 } from '../types'
+import { borrarToken, leerToken } from './auth'
 import { CASOS_LOCALES } from './casos'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
@@ -19,18 +23,37 @@ export class ApiError extends Error {
   }
 }
 
+/** Header Authorization cuando hay sesión iniciada. */
+function cabecerasAuth(): Record<string, string> {
+  const token = leerToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+/**
+ * Un 401 significa que el token venció o dejó de ser válido: se descarta para
+ * que la app vuelva a la pantalla de acceso en vez de reintentar en loop.
+ */
+function siNoAutorizado(status: number) {
+  if (status === 401) borrarToken()
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      headers: {
+        'Content-Type': 'application/json',
+        ...cabecerasAuth(),
+        ...init?.headers,
+      },
     })
   } catch {
     throw new ApiError('No se pudo contactar al backend. ¿Está corriendo uvicorn en :8000?')
   }
 
   if (!res.ok) {
+    siNoAutorizado(res.status)
     throw new ApiError(await mensajeDeError(res), res.status)
   }
   return (await res.json()) as T
@@ -80,6 +103,37 @@ export function iniciarSesion(casoId: string): Promise<IniciarSesionResponse> {
     method: 'POST',
     body: JSON.stringify({ caso_id: casoId }),
   })
+}
+
+/** Sesiones pasadas del usuario autenticado, más reciente primero. */
+export function obtenerHistorial(): Promise<SesionHistorial[]> {
+  return request<SesionHistorial[]>('/simulacion/historial')
+}
+
+
+// ── Autenticación ──────────────────────────────────────────────────
+
+export function registrar(
+  username: string,
+  email: string,
+  password: string,
+): Promise<TokenResponse> {
+  return request<TokenResponse>('/auth/registro', {
+    method: 'POST',
+    body: JSON.stringify({ username, email, password }),
+  })
+}
+
+export function login(email: string, password: string): Promise<TokenResponse> {
+  return request<TokenResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+}
+
+/** Valida el token guardado y devuelve su dueño. */
+export function obtenerUsuarioActual(): Promise<UsuarioPublico> {
+  return request<UsuarioPublico>('/auth/yo')
 }
 
 export function finalizarSesion(sesionId: string): Promise<FinalizarSesionResponse> {
@@ -133,7 +187,11 @@ export async function enviarTurno(
   try {
     res = await fetch(`${BASE_URL}/simulacion/turno`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        ...cabecerasAuth(),
+      },
       body: JSON.stringify({ sesion_id: sesionId, mensaje_estudiante: mensaje }),
       signal,
     })
@@ -142,7 +200,10 @@ export async function enviarTurno(
     throw new ApiError('Se perdió la conexión con el backend durante el turno.')
   }
 
-  if (!res.ok) throw new ApiError(await mensajeDeError(res), res.status)
+  if (!res.ok) {
+    siNoAutorizado(res.status)
+    throw new ApiError(await mensajeDeError(res), res.status)
+  }
   if (!res.body) throw new ApiError('El backend no devolvió un stream legible.')
 
   const reader = res.body.getReader()
