@@ -1,0 +1,1220 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Landing — lámina de atlas clínico sobre papel
+   ═══════════════════════════════════════════════════════════════════ */
+
+.landing {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fuera de flujo: marca el tope de la página sin empujar la lámina. */
+.centinela-tope {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.landing canvas {
+  display: block;
+}
+
+html:has(.landing) {
+  scroll-behavior: smooth;
+}
+
+/* ── Cursor: punto exacto + anillo que lo persigue ────────────────────
+   El punto va pegado al puntero real; solo el anillo interpola detrás, así
+   el arrastre se lee como intención y no como lag. El color lo resuelve
+   `difference`: se invierte solo sobre papel, sobre la lámina y sobre los
+   strands, sin tener que saber qué hay debajo.
+   ------------------------------------------------------------------- */
+.landing,
+.landing a,
+.landing button {
+  cursor: none;
+}
+
+.cursor-punto,
+.cursor-anillo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: difference;
+  transition: opacity 0.3s ease;
+  will-change: transform;
+}
+
+.cursor--visible {
+  opacity: 1;
+}
+
+/* La forma va en un hijo: el padre lleva la posición desde el rAF y el hijo
+   la escala desde CSS. Separados, las dos transformaciones no se pisan. */
+.cursor-punto span,
+.cursor-anillo span {
+  display: block;
+  border-radius: 50%;
+  transition:
+    transform 0.28s cubic-bezier(0.2, 0.7, 0.3, 1),
+    border-color 0.28s ease,
+    background 0.28s ease;
+}
+
+.cursor-punto span {
+  width: 10px;
+  height: 10px;
+  background: #f0eae0;
+}
+
+.cursor-anillo span {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgb(240 234 224 / 0.75);
+}
+
+/* Sobre lo accionable: el anillo se abre y el punto se retrae.
+   La retracción se ajustó al punto nuevo: 0.5 lo deja en 5px. */
+.cursor-punto.cursor--activo span {
+  transform: scale(0.5);
+}
+
+.cursor-anillo.cursor--activo span {
+  transform: scale(1.65);
+  border-color: rgb(240 234 224 / 0.95);
+}
+
+/* Al presionar, todo colapsa hacia el centro. */
+.cursor-punto.cursor--presionado span {
+  transform: scale(1.6);
+}
+
+.cursor-anillo.cursor--presionado span {
+  transform: scale(0.78);
+}
+
+/* En táctil no hay puntero: se devuelve el cursor del sistema. */
+@media (pointer: coarse) {
+  .landing,
+  .landing a,
+  .landing button {
+    cursor: auto;
+  }
+
+  .cursor-punto,
+  .cursor-anillo {
+    display: none;
+  }
+}
+
+/* La cabecera es fija: los anclas tienen que dejarle su altura. */
+#procedimiento,
+#recorrido,
+#servicios {
+  scroll-margin-top: 92px;
+}
+
+/* ── Cabecera ─────────────────────────────────────────────────────── */
+/* Fija y flotante: la lámina arranca en el borde superior del viewport. */
+.landing__nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 16px clamp(20px, 4vw, 44px);
+  background: rgb(240 234 224 / 0.88);
+  backdrop-filter: blur(8px) saturate(1.2);
+  border-bottom: 1px solid var(--linea-fuerte);
+  transition:
+    background 0.45s ease,
+    border-color 0.45s ease,
+    padding 0.45s ease,
+    backdrop-filter 0.45s ease;
+}
+
+/* Sobre la lámina se invierte: barra de tinta translúcida y texto hueso.
+   Sin esto, el titular del hero le pasa por encima y no se lee ninguno de los dos. */
+.landing__nav--placa {
+  background: rgb(18 16 13 / 0.74);
+  backdrop-filter: blur(12px) saturate(1.1);
+  border-bottom-color: rgb(237 229 215 / 0.16);
+}
+
+/* Solo en el tope real de la página desaparece el fondo y la cabecera baja
+   para entrar dentro del margen que marcan las esquinas de registro. */
+.landing__nav--tope {
+  background: transparent;
+  backdrop-filter: none;
+  border-bottom-color: transparent;
+  padding-top: 54px;
+}
+
+.landing__nav--placa h2 {
+  color: var(--placa-texto);
+}
+
+.landing__nav--placa p {
+  color: rgb(237 229 215 / 0.5);
+}
+
+.landing__nav--placa .logo {
+  background: var(--placa-texto);
+  border-color: var(--placa-texto);
+}
+
+.landing__nav--placa .logo::before,
+.landing__nav--placa .logo::after {
+  background: var(--placa);
+}
+
+.landing__nav--placa .topbar__marca--boton:hover .logo,
+.landing__nav--placa .estado--caido .estado__punto {
+  background: var(--oxido-claro);
+}
+
+.landing__nav--placa .estado {
+  color: rgb(237 229 215 / 0.62);
+}
+
+.landing__nav--placa .btn.btn--primario {
+  background: var(--placa-texto);
+  border-color: var(--placa-texto);
+  color: var(--placa);
+}
+
+.landing__nav--placa .btn.btn--primario:hover:not(:disabled) {
+  background: var(--oxido-claro);
+  border-color: var(--oxido-claro);
+  color: var(--placa-texto);
+  box-shadow: 4px 4px 0 rgb(237 229 215 / 0.28);
+}
+
+.landing__nav h2 {
+  margin: 0;
+  font-family: var(--serif-display);
+  font-size: 23px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+
+.landing__nav p {
+  margin: 3px 0 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--tinta-tenue);
+}
+
+.landing__nav-acciones {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ── Hero / lámina a pantalla completa ────────────────────────────── */
+.hero {
+  padding: 0;
+}
+
+.placa {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--placa);
+  color: var(--placa-texto);
+  border: none;
+  /* El tope deja pasar la cabecera bajada, que llega hasta ~120px. */
+  padding: clamp(136px, 16vh, 184px) clamp(26px, 6vw, 84px) clamp(96px, 12vh, 132px);
+  min-height: 100vh;
+  /* svh evita el salto por la barra de herramientas en móvil. */
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+}
+
+.placa__lienzo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  /* Grabado de respaldo si el canvas WebGL no monta. */
+  background:
+    radial-gradient(58% 46% at 50% 52%, rgb(196 82 63 / 0.2), transparent 72%),
+    radial-gradient(40% 38% at 76% 40%, rgb(166 112 42 / 0.16), transparent 74%);
+}
+
+.placa__strands {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Viñeta: hunde los bordes para que el texto gane siempre. */
+.placa::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(100deg, var(--placa) 12%, rgb(20 18 15 / 0.55) 46%, transparent 76%),
+    radial-gradient(120% 90% at 50% 50%, transparent 42%, rgb(20 18 15 / 0.72) 100%);
+}
+
+/* Marcas de registro, como una lámina lista para imprenta. */
+.placa__marca {
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  border: 0 solid rgb(237 229 215 / 0.42);
+  z-index: 2;
+}
+
+.placa__marca--si {
+  top: 20px;
+  left: 20px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.placa__marca--sd {
+  top: 20px;
+  right: 20px;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.placa__marca--ii {
+  bottom: 20px;
+  left: 20px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.placa__marca--id {
+  bottom: 20px;
+  right: 20px;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+.placa__contenido {
+  position: relative;
+  z-index: 3;
+  width: min(760px, 100%);
+}
+
+.placa__rotulo {
+  margin: 0 0 clamp(20px, 3vw, 34px);
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgb(237 229 215 / 0.22);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgb(237 229 215 / 0.62);
+  max-width: 30ch;
+  animation: surgir 0.8s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.hero__titulo {
+  margin: 0 0 clamp(22px, 3vw, 32px);
+  font-family: var(--serif-display);
+  font-weight: 400;
+  font-size: clamp(46px, 8.4vw, 108px);
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+}
+
+.hero__linea {
+  display: block;
+  animation: revelar-linea 1s cubic-bezier(0.22, 0.68, 0.24, 1) both;
+}
+
+.hero__linea--acento {
+  font-style: italic;
+  color: var(--oxido-claro);
+  padding-left: 0.06em;
+}
+
+@keyframes revelar-linea {
+  from {
+    opacity: 0;
+    transform: translateY(0.24em);
+    clip-path: inset(0 0 102% 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(-30% -12% -30% 0);
+  }
+}
+
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.hero__bajada {
+  margin: 0 0 clamp(28px, 3.4vw, 40px);
+  max-width: 52ch;
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.62;
+  color: rgb(237 229 215 / 0.74);
+  animation: surgir 0.85s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.hero__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  animation: surgir 0.85s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/* Se mantiene por encima del solape de .constantes. */
+.placa__pie {
+  position: absolute;
+  left: clamp(26px, 6vw, 84px);
+  bottom: clamp(48px, 4.5vw, 62px);
+  margin: 0;
+  z-index: 3;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgb(237 229 215 / 0.34);
+}
+
+/* Botones sobre la placa oscura.
+   Doble clase a propósito: gana a .btn sin depender del orden de los archivos. */
+.btn.btn--luz {
+  border-color: var(--placa-texto);
+  background: var(--placa-texto);
+  color: var(--placa);
+}
+
+.btn.btn--luz:hover:not(:disabled) {
+  background: var(--oxido-claro);
+  border-color: var(--oxido-claro);
+  color: var(--placa-texto);
+  box-shadow: 4px 4px 0 rgb(237 229 215 / 0.28);
+}
+
+.btn.btn--contorno-luz {
+  border-color: rgb(237 229 215 / 0.45);
+  color: var(--placa-texto);
+  background: transparent;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 11px 20px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.btn.btn--contorno-luz:hover {
+  border-color: var(--placa-texto);
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 rgb(237 229 215 / 0.28);
+}
+
+.btn.btn--grande {
+  padding: 15px 30px;
+  font-size: 12.5px;
+}
+
+/* ── Constantes al ingreso: rompen el borde inferior de la lámina ─── */
+.constantes {
+  position: relative;
+  z-index: 10;
+  margin: -34px clamp(20px, 4vw, 44px) 0;
+  border: 1px solid var(--tinta);
+  background: var(--papel);
+}
+
+.constantes__fila {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  background: var(--papel);
+}
+
+/* El borde derecho lo pone cada celda; el último se recorta contra el marco. */
+.constante {
+  padding: 17px 20px 15px;
+  border-right: 1px solid var(--linea-fuerte);
+  margin-right: -1px;
+}
+
+.constante dt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--tinta-tenue);
+}
+
+.constante dd {
+  margin: 7px 0 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.constante__valor {
+  font-family: var(--serif-display);
+  font-size: 34px;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+}
+
+.constante__unidad {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--tinta-tenue);
+}
+
+/* Marca de valor fuera de rango, como en una planilla de guardia. */
+.constante__nota {
+  margin-left: auto;
+  align-self: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--verde);
+  border: 1px solid currentColor;
+  padding: 2px 6px;
+}
+
+.constante__nota--alterado {
+  color: var(--oxido);
+  background: rgb(163 50 36 / 0.07);
+}
+
+.constantes__pie {
+  margin: 0;
+  padding: 9px 20px;
+  border-top: 1px solid var(--linea-fuerte);
+  background: var(--papel-hueso);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--tinta-tenue);
+}
+
+/* ── Cuerpo editorial ─────────────────────────────────────────────── */
+.landing__cuerpo {
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 44px);
+}
+
+.seccion {
+  padding: clamp(64px, 9vw, 118px) 0;
+  border-bottom: 1px solid var(--linea);
+}
+
+.seccion:last-child {
+  border-bottom: none;
+}
+
+.seccion__cabecera {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 0 24px;
+  margin-bottom: clamp(34px, 4vw, 54px);
+}
+
+.seccion__marca {
+  grid-row: 1 / span 3;
+  margin: 0;
+  padding-top: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--oxido);
+  border-top: 2px solid var(--oxido);
+  align-self: start;
+}
+
+.seccion__titulo {
+  margin: 0 0 16px;
+  font-family: var(--serif-display);
+  font-weight: 400;
+  font-size: clamp(30px, 4.6vw, 54px);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+
+.seccion__bajada {
+  margin: 0;
+  max-width: 58ch;
+  font-size: 17.5px;
+  color: var(--tinta-media);
+  text-wrap: pretty;
+}
+
+.seccion code {
+  font-family: var(--mono);
+  font-size: 0.82em;
+  padding: 2px 6px;
+  background: var(--papel-hondo);
+  border: 1px solid var(--linea);
+}
+
+/* ── Pasos: numerales colgados al margen ──────────────────────────── */
+.pasos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--tinta);
+}
+
+.paso {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 128px;
+  gap: 24px;
+  align-items: baseline;
+  padding: 30px 0 28px;
+  border-bottom: 1px solid var(--linea);
+  transition: background 0.3s ease;
+}
+
+.paso:hover {
+  background: var(--papel-hueso);
+}
+
+.paso__n {
+  font-family: var(--serif-display);
+  font-size: 40px;
+  line-height: 0.8;
+  color: var(--oxido);
+  letter-spacing: -0.02em;
+}
+
+.paso__cuerpo h3 {
+  margin: 0 0 8px;
+  font-family: var(--serif-display);
+  font-size: 27px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+.paso__cuerpo p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--tinta-media);
+  font-size: 16.5px;
+}
+
+.paso__margen {
+  justify-self: end;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--tinta-tenue);
+  border-bottom: 1px dotted var(--linea-fuerte);
+  padding-bottom: 2px;
+}
+
+/* ── Tabla de agentes ─────────────────────────────────────────────── */
+.tabla-envoltura {
+  overflow-x: auto;
+  border-top: 1px solid var(--tinta);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+  text-align: left;
+}
+
+.tabla th,
+.tabla td {
+  padding: 16px 18px 15px;
+  border-bottom: 1px solid var(--linea);
+  vertical-align: baseline;
+}
+
+.tabla thead th {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--tinta-tenue);
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--linea-fuerte);
+}
+
+.tabla tbody th {
+  font-family: var(--serif-display);
+  font-size: 23px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.tabla__mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--tinta-media);
+  white-space: nowrap;
+}
+
+.tabla td:last-child {
+  color: var(--tinta-media);
+  font-size: 16px;
+}
+
+.tabla tbody tr {
+  transition: background 0.25s ease;
+}
+
+.tabla tbody tr:hover {
+  background: var(--papel-hueso);
+}
+
+/* El validador es el punto crítico: la tabla lo dice sin explicarlo. */
+.tabla__critico th[scope='row'] {
+  color: var(--oxido);
+  position: relative;
+}
+
+.tabla__critico th[scope='row']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  background: var(--oxido);
+}
+
+/* ── Diagrama de flujo ────────────────────────────────────────────────
+   Sobre papel, como el resto del documento: sin marco ni fondo propio,
+   solo el filete de apertura. La legibilidad la sostiene la jerarquía
+   tipográfica —nombre en serif, dato en mono, índice al margen—, no el
+   contraste de un bloque oscuro.
+   ------------------------------------------------------------------- */
+.diagrama-envoltura {
+  margin: 0;
+  border-top: 1px solid var(--tinta);
+}
+
+/* Igual que la tabla: antes de deformarse, el diagrama se desplaza. */
+.diagrama-scroll {
+  overflow-x: auto;
+  padding: clamp(30px, 4vw, 52px) 0 0;
+}
+
+.diagrama {
+  display: block;
+  width: 100%;
+  min-width: 820px;
+  height: auto;
+}
+
+/* ── Nodos ── */
+.dg-caja {
+  fill: var(--papel-hueso);
+  stroke: var(--linea-fuerte);
+  stroke-width: 1;
+}
+
+.dg-nodo--critico .dg-caja {
+  fill: rgb(163 50 36 / 0.08);
+  stroke: var(--oxido);
+  stroke-width: 1.3;
+}
+
+/* Punteado: el tutor no está en el camino del turno. */
+.dg-nodo--async .dg-caja {
+  fill: none;
+  stroke: var(--tinta-tenue);
+  stroke-dasharray: 5 5;
+}
+
+.dg-indice {
+  fill: var(--tinta-tenue);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+
+.dg-nodo--critico .dg-indice {
+  fill: var(--oxido);
+}
+
+/* El nombre en serif y el dato en mono: dos niveles, no un bloque uniforme. */
+.dg-nombre {
+  fill: var(--tinta);
+  font-family: var(--serif-display);
+  font-size: 21px;
+  letter-spacing: -0.01em;
+}
+
+.dg-nodo--critico .dg-nombre {
+  fill: var(--oxido);
+}
+
+.dg-sub {
+  fill: var(--tinta-media);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Vías ── */
+.dg-via {
+  fill: none;
+  stroke: rgb(23 19 16 / 0.42);
+  stroke-width: 1;
+}
+
+.dg-via--oxido {
+  stroke: var(--oxido);
+}
+
+.dg-via--async {
+  stroke: rgb(23 19 16 / 0.26);
+  stroke-dasharray: 3 5;
+}
+
+.dg-flecha {
+  fill: rgb(23 19 16 / 0.6);
+}
+
+.dg-flecha--oxido {
+  fill: var(--oxido);
+}
+
+/* Pulso: recorre el circuito entero y da dirección sin decorar de más.
+   En tinta, para no competir con el óxido del camino de vuelta. */
+.dg-pulso {
+  fill: none;
+  stroke: var(--tinta);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 26 300;
+  animation: dg-fluir 4.5s linear infinite;
+  opacity: 0.72;
+}
+
+@keyframes dg-fluir {
+  from {
+    stroke-dashoffset: 326;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.dg-etiqueta {
+  fill: var(--tinta-tenue);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.dg-etiqueta--oxido {
+  fill: var(--oxido);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .dg-pulso {
+    animation: none;
+    stroke-dasharray: none;
+    opacity: 0.22;
+  }
+}
+
+/* ── Servicios ────────────────────────────────────────────────────── */
+/* Filetes por borde y no por `gap` sobre fondo: con 5 grupos en 4 columnas,
+   las celdas vacías de la última fila dejaban ver el fondo como un bloque. */
+.servicios {
+  display: grid;
+  /* 205px deja entrar los cinco grupos en una sola fila a ancho completo. */
+  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+  background: var(--papel);
+  border-top: 1px solid var(--linea-fuerte);
+  border-left: 1px solid var(--linea-fuerte);
+}
+
+.servicio {
+  padding: 22px 22px 24px;
+  border-right: 1px solid var(--linea-fuerte);
+  border-bottom: 1px solid var(--linea-fuerte);
+}
+
+.servicio__grupo {
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--oxido);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--oxido);
+}
+
+.servicio__lista {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.servicio__lista dt {
+  font-family: var(--serif-display);
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.servicio__lista dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--tinta-media);
+}
+
+/* ── Cita verificada ──────────────────────────────────────────────── */
+.destacado {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+}
+
+.destacado .seccion__cabecera {
+  margin-bottom: 0;
+}
+
+.cita {
+  position: relative;
+  margin: 0;
+  padding: 34px 32px 26px;
+  border: 1px solid var(--tinta);
+  background: var(--papel-hueso);
+  box-shadow: 7px 7px 0 rgb(23 19 16 / 0.1);
+}
+
+.cita blockquote {
+  margin: 0 0 18px;
+  font-family: var(--serif-texto);
+  font-size: 19px;
+  line-height: 1.5;
+  font-style: italic;
+  text-indent: -0.42em;
+}
+
+.cita blockquote::before {
+  content: '«';
+  color: var(--oxido);
+}
+
+.cita blockquote::after {
+  content: '»';
+  color: var(--oxido);
+}
+
+.cita figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--linea-fuerte);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--tinta-media);
+}
+
+.cita__estado {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--verde);
+}
+
+/* Sello de aprobación, rotado como estampado a mano. */
+.sello {
+  position: absolute;
+  top: -20px;
+  right: -14px;
+  transform: rotate(-9deg);
+  padding: 7px 14px;
+  border: 2px solid var(--oxido);
+  background: var(--papel);
+  color: var(--oxido);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  opacity: 0.92;
+}
+
+/* ── Costos ───────────────────────────────────────────────────────── */
+/* Mismo criterio que .servicios: el filete es borde, no fondo asomando. */
+.costos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  background: var(--papel);
+  border-top: 1px solid var(--linea-fuerte);
+  border-left: 1px solid var(--linea-fuerte);
+}
+
+.costo {
+  padding: 30px 26px 28px;
+  border-right: 1px solid var(--linea-fuerte);
+  border-bottom: 1px solid var(--linea-fuerte);
+}
+
+.costo--elegido {
+  background: var(--placa);
+  color: var(--placa-texto);
+}
+
+.costo__monto {
+  margin: 0;
+  font-family: var(--serif-display);
+  font-size: clamp(50px, 6vw, 68px);
+  line-height: 0.86;
+  letter-spacing: -0.045em;
+}
+
+.costo__monto::before {
+  content: '$';
+  font-family: var(--mono);
+  font-size: 0.26em;
+  vertical-align: 0.95em;
+  margin-right: 0.1em;
+  color: var(--tinta-tenue);
+}
+
+.costo--elegido .costo__monto {
+  color: var(--oxido-claro);
+}
+
+.costo--elegido .costo__monto::before {
+  color: rgb(237 229 215 / 0.5);
+}
+
+.costo__label {
+  margin: 14px 0 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.17em;
+  color: var(--tinta-tenue);
+}
+
+.costo--elegido .costo__label {
+  color: rgb(237 229 215 / 0.62);
+}
+
+.costo__nota {
+  margin: 0;
+  font-size: 15.5px;
+  color: var(--tinta-media);
+}
+
+.costo--elegido .costo__nota {
+  color: rgb(237 229 215 / 0.72);
+}
+
+/* ── Cierre ───────────────────────────────────────────────────────── */
+.cierre {
+  margin: 0 clamp(20px, 4vw, 44px) clamp(20px, 4vw, 44px);
+  padding: clamp(56px, 8vw, 104px) clamp(26px, 6vw, 84px);
+  background: var(--placa);
+  color: var(--placa-texto);
+  border: 1px solid var(--tinta);
+  text-align: center;
+}
+
+.cierre .placa__rotulo {
+  max-width: none;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 20px;
+  animation: none;
+}
+
+.cierre h2 {
+  margin: 0 0 18px;
+  font-family: var(--serif-display);
+  font-weight: 400;
+  font-size: clamp(32px, 5.4vw, 62px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.cierre h2 em {
+  font-style: italic;
+  color: var(--oxido-claro);
+}
+
+.cierre__texto {
+  margin: 0 auto 34px;
+  max-width: 46ch;
+  color: rgb(237 229 215 / 0.7);
+  font-size: 17px;
+}
+
+/* Colofón: una sola línea, filete y nada más. */
+.landing__footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 20px clamp(20px, 4vw, 44px) 26px;
+  border-top: 1px solid var(--linea);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--tinta-tenue);
+}
+
+.landing__footer-marca {
+  font-family: var(--serif-display);
+  font-size: 15px;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
+}
+
+/* ── Revelado al scroll ───────────────────────────────────────────── */
+[data-revelar] {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.75s cubic-bezier(0.2, 0.7, 0.3, 1),
+    transform 0.75s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+[data-revelar].revelado {
+  opacity: 1;
+  transform: none;
+}
+
+.paso:nth-child(2) {
+  transition-delay: 0.06s;
+}
+
+.paso:nth-child(3) {
+  transition-delay: 0.12s;
+}
+
+.paso:nth-child(4) {
+  transition-delay: 0.18s;
+}
+
+.costo:nth-child(2) {
+  transition-delay: 0.08s;
+}
+
+.costo:nth-child(3) {
+  transition-delay: 0.16s;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .seccion__cabecera,
+  .paso {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .seccion__marca {
+    grid-row: auto;
+    padding-top: 8px;
+    max-width: 60px;
+  }
+
+  .paso__n {
+    font-size: 30px;
+  }
+
+  .paso__margen {
+    justify-self: start;
+  }
+
+  .constantes {
+    margin-top: -22px;
+  }
+
+  /* En pantallas chicas las marcas superiores chocan con la cabecera:
+     se ocultan y la cabecera recupera su altura compacta. */
+  .placa__marca--si,
+  .placa__marca--sd {
+    display: none;
+  }
+
+  .landing__nav--tope {
+    padding-top: 16px;
+  }
+
+  .sello {
+    top: -16px;
+    right: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.landing) {
+    scroll-behavior: auto;
+  }
+
+  .hero__linea,
+  .placa__rotulo,
+  .hero__bajada,
+  .hero__acciones {
+    animation: none;
+    opacity: 1;
+    clip-path: none;
+    transform: none;
+  }
+}
