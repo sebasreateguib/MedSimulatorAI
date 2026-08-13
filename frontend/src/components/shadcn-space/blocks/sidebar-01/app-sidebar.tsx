@@ -1,6 +1,14 @@
 "use client";
 
-import { BarChart3, ClipboardCheck, History, Home, LogOut, Stethoscope } from "lucide-react";
+import {
+  BarChart3,
+  ClipboardCheck,
+  History,
+  Home,
+  LogOut,
+  Stethoscope,
+  TrendingUp,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +35,7 @@ interface AppSidebarProps {
   onVerEvaluacion: () => void;
   onVerHistorial: () => void;
   onVerMetricas: () => void;
+  onVerMetricasCasos: () => void;
   tieneEvaluacion: boolean;
   usuario: UsuarioPublico | null;
   onSalir: () => void;
@@ -38,6 +47,7 @@ export function AppSidebar({
   onVerEvaluacion,
   onVerHistorial,
   onVerMetricas,
+  onVerMetricasCasos,
   tieneEvaluacion,
   usuario,
   onSalir,
@@ -53,6 +63,7 @@ export function AppSidebar({
     { label: "Analítica", isSection: true },
     { title: "Historial", icon: History, href: "#", onClick: onVerHistorial },
     { title: "Métricas de uso", icon: BarChart3, href: "#", onClick: onVerMetricas },
+    { title: "Métricas de casos", icon: TrendingUp, href: "#", onClick: onVerMetricasCasos },
   ];
 
   return (

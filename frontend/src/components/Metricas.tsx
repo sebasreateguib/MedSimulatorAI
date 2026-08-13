@@ -56,6 +56,27 @@ interface Tablero {
   franjas: number[][]
   maxFranja: number
   recientes: SesionHistorial[]
+  /**
+   * Mitad vieja contra mitad nueva de las sesiones cerradas. `null` cuando hay
+   * menos de 4: con dos o tres puntajes el "delta" es ruido, no una tendencia.
+   */
+  evolucion: { inicial: number; reciente: number; delta: number; n: number } | null
+  /** Un casillero por día de la ventana, del más viejo al más nuevo. */
+  tira: { fecha: Date; n: number }[]
+  maxTira: number
+  rachaActual: number
+  rachaMaxima: number
+  diasActivos: number
+}
+
+/** Ventana del calendario de constancia, en días. */
+const VENTANA = 30
+
+/** Clave YYYY-MM-DD local: `toISOString()` normaliza a UTC y corre el día. */
+function claveDia(d: Date): string {
+  const mes = String(d.getMonth() + 1).padStart(2, '0')
+  const dia = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mes}-${dia}`
 }
 
 function derivar(sesiones: SesionHistorial[]): Tablero {
@@ -95,6 +116,9 @@ function derivar(sesiones: SesionHistorial[]): Tablero {
   const franjas = Array.from({ length: 7 }, () => Array.from({ length: FRANJAS.length }, () => 0))
   let maxFranja = 0
 
+  /** Sesiones por día calendario, para racha y calendario de constancia. */
+  const porDia = new Map<string, number>()
+
   for (const s of sesiones) {
     const t = new Date(s.created_at)
     if (Number.isNaN(t.getTime())) continue
@@ -104,11 +128,63 @@ function derivar(sesiones: SesionHistorial[]): Tablero {
     fila[col] += 1
     if (fila[col] > maxFranja) maxFranja = fila[col]
 
+    // Antes del `continue` de abajo: para la constancia cuenta haberse sentado
+    // a practicar, esté la sesión cerrada o no.
+    const clave = claveDia(t)
+    porDia.set(clave, (porDia.get(clave) ?? 0) + 1)
+
     // Sin puntaje todavía no hay banda: cuenta en la serie recién al cerrarse.
     if (s.puntaje === null) continue
     const dias = Math.floor((t.setHours(0, 0, 0, 0) - hoy.getTime()) / 86_400_000)
     const cubeta = semana[6 + dias]
     if (cubeta) cubeta.porBanda[bandaDe(s.puntaje).id] += 1
+  }
+
+  // ── Evolución ──
+  // El historial llega del más nuevo al más viejo; para partirlo en "antes" y
+  // "después" hay que ordenarlo al derecho primero.
+  const cronologicas = [...puntuadas].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  )
+  // Con largo impar la sesión del medio queda afuera de las dos mitades, que es
+  // lo correcto: no pertenece ni al principio ni al final.
+  const mitad = Math.floor(cronologicas.length / 2)
+  const promediar = (xs: { puntaje: number }[]) => xs.reduce((a, s) => a + s.puntaje, 0) / xs.length
+
+  const evolucion =
+    cronologicas.length >= 4
+      ? (() => {
+          const inicial = promediar(cronologicas.slice(0, mitad))
+          const reciente = promediar(cronologicas.slice(-mitad))
+          return { inicial, reciente, delta: reciente - inicial, n: mitad }
+        })()
+      : null
+
+  // ── Constancia ──
+  const tira = Array.from({ length: VENTANA }, (_, i) => {
+    const fecha = new Date(hoy)
+    fecha.setDate(hoy.getDate() - (VENTANA - 1 - i))
+    return { fecha, n: porDia.get(claveDia(fecha)) ?? 0 }
+  })
+
+  // Racha en curso, contando hacia atrás desde hoy. Un día sin practicar todavía
+  // no corta nada: la racha se rompe recién cuando el día ya cerrado quedó vacío.
+  let rachaActual = 0
+  for (let i = tira.length - 1; i >= 0; i -= 1) {
+    if (tira[i].n > 0) rachaActual += 1
+    else if (i !== tira.length - 1) break
+  }
+
+  // La máxima se mide sobre todo el historial, no sobre la ventana: es una marca
+  // personal y no tendría sentido que se borre al salir de los 30 días.
+  let rachaMaxima = 0
+  let corrida = 0
+  let previa: number | null = null
+  for (const clave of [...porDia.keys()].sort()) {
+    const dia = new Date(`${clave}T00:00:00`).getTime()
+    corrida = previa !== null && Math.round((dia - previa) / 86_400_000) === 1 ? corrida + 1 : 1
+    if (corrida > rachaMaxima) rachaMaxima = corrida
+    previa = dia
   }
 
   return {
@@ -136,6 +212,12 @@ function derivar(sesiones: SesionHistorial[]): Tablero {
     franjas,
     maxFranja,
     recientes: sesiones.slice(0, 6),
+    evolucion,
+    tira,
+    maxTira: Math.max(1, ...tira.map((d) => d.n)),
+    rachaActual,
+    rachaMaxima,
+    diasActivos: tira.filter((d) => d.n > 0).length,
   }
 }
 
@@ -248,9 +330,14 @@ function Lamina({
   )
 }
 
-// ── Componente ──────────────────────────────────────────────────────
+// ── Carga de datos ──────────────────────────────────────────────────
 
-export function MetricasUso() {
+/**
+ * Las dos vistas de métricas se alimentan del mismo historial y de la misma
+ * derivación: comparten el hook para que no haya dos fetch ni dos criterios
+ * sobre cuándo entran los datos de ejemplo.
+ */
+function useTablero() {
   const [estado, setEstado] = useState<Estado>('cargando')
   const [sesiones, setSesiones] = useState<SesionHistorial[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -291,6 +378,35 @@ export function MetricasUso() {
 
   const t = useMemo(() => derivar(sesiones), [sesiones])
 
+  return { estado, error, demo, t }
+}
+
+interface PropsCabecera {
+  rotulo: string
+  titulo: string
+  bajada: string
+  total: number
+  demo: boolean
+}
+
+/**
+ * Envoltorio común: resuelve error, carga y historial vacío igual en las dos
+ * vistas, y recién con datos delega el cuerpo al `children`. Sin esto, cada
+ * vista repite tres estados que no tienen por qué diferir.
+ */
+function Marco({
+  cabecera,
+  estado,
+  error,
+  vacio,
+  children,
+}: {
+  cabecera: PropsCabecera
+  estado: Estado
+  error: string | null
+  vacio: boolean
+  children: ReactNode
+}) {
   if (estado === 'error') {
     return (
       <section className="tablero">
@@ -303,32 +419,25 @@ export function MetricasUso() {
 
   if (estado === 'cargando') {
     return (
+      // Dos láminas genéricas: el marco es común a las dos vistas, así que el
+      // esqueleto no puede anunciar títulos de secciones que quizá no vengan.
       <section className="tablero">
-        <Lamina n="01" titulo="Resumen">
-          <div className="tablero__kpis">
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="tablero__tarjeta tablero__tarjeta--skeleton"
-                aria-hidden="true"
-              />
-            ))}
-          </div>
-        </Lamina>
-        <Lamina n="02" titulo="Desempeño">
-          <div className="tablero__grid tablero__grid--duo">
-            <div className="tablero__panel tablero__panel--skeleton" aria-hidden="true" />
-            <div className="tablero__panel tablero__panel--skeleton" aria-hidden="true" />
-          </div>
-        </Lamina>
+        {['01', '02'].map((n) => (
+          <Lamina key={n} n={n} titulo="Cargando">
+            <div className="tablero__grid tablero__grid--duo">
+              <div className="tablero__panel tablero__panel--skeleton" aria-hidden="true" />
+              <div className="tablero__panel tablero__panel--skeleton" aria-hidden="true" />
+            </div>
+          </Lamina>
+        ))}
       </section>
     )
   }
 
-  if (t.total === 0) {
+  if (vacio) {
     return (
       <section className="tablero">
-        <Cabecera total={0} demo={demo} />
+        <Cabecera {...cabecera} total={0} />
         <div className="tablero__panel tablero__vacio">
           <p>Todavía no hay sesiones registradas.</p>
           <p className="tablero__pie">
@@ -339,15 +448,39 @@ export function MetricasUso() {
     )
   }
 
+  return (
+    <section className="tablero">
+      <Cabecera {...cabecera} />
+      {children}
+    </section>
+  )
+}
+
+// ── Métricas de uso ─────────────────────────────────────────────────
+
+export function MetricasUso() {
+  const { estado, error, demo, t } = useTablero()
+
   const maxSemana = Math.max(
     1,
     ...t.semana.map((d) => Math.max(...BANDAS.map((b) => d.porBanda[b.id]))),
   )
 
   return (
-    <section className="tablero">
-      <Cabecera total={t.total} demo={demo} />
-
+    <Marco
+      estado={estado}
+      error={error}
+      vacio={t.total === 0}
+      cabecera={{
+        rotulo: '/ Métricas de uso',
+        titulo: 'Tu actividad',
+        bajada: demo
+          ? 'Vista previa del tablero con datos sintéticos.'
+          : 'Cuánto practicaste, qué tan bien y en qué momentos.',
+        total: t.total,
+        demo,
+      }}
+    >
       <Lamina n="01" titulo="Resumen" nota="Totales acumulados">
         <div className="tablero__kpis">
           <Tarjeta
@@ -578,8 +711,31 @@ export function MetricasUso() {
           </Panel>
         </div>
       </Lamina>
+    </Marco>
+  )
+}
 
-      <Lamina n="04" titulo="Registro" nota="Volumen por caso y últimos movimientos">
+// ── Métricas de casos ───────────────────────────────────────────────
+
+export function MetricasCasos() {
+  const { estado, error, demo, t } = useTablero()
+
+  return (
+    <Marco
+      estado={estado}
+      error={error}
+      vacio={t.total === 0}
+      cabecera={{
+        rotulo: '/ Métricas de casos',
+        titulo: 'Tu progreso',
+        bajada: demo
+          ? 'Vista previa del tablero con datos sintéticos.'
+          : 'Qué casos practicaste más y cómo viene evolucionando tu puntaje.',
+        total: t.total,
+        demo,
+      }}
+    >
+      <Lamina n="01" titulo="Registro" nota="Volumen por caso y últimos movimientos">
         <div className="tablero__grid tablero__grid--duo">
           {/* Casos más practicados */}
           <Panel rotulo="Volumen por caso" titulo="Más practicados">
@@ -635,28 +791,120 @@ export function MetricasUso() {
           </Panel>
         </div>
       </Lamina>
-    </section>
+
+      <Lamina n="02" titulo="Progreso" nota={`Constancia sobre los últimos ${VENTANA} días`}>
+        <div className="tablero__grid tablero__grid--duo">
+          {/* Evolución del puntaje */}
+          <Panel rotulo="Curva de aprendizaje" titulo="Primeras contra últimas">
+            {t.evolucion === null ? (
+              <p className="tablero__pie">
+                Hacen falta al menos 4 sesiones cerradas para medir una tendencia.
+              </p>
+            ) : (
+              <div className="tablero__evolucion">
+                <div className="tablero__evolucion-par">
+                  <div>
+                    <p className="rotulo">Primeras {t.evolucion.n}</p>
+                    <p className="tablero__cifra tablero__cifra--media">
+                      {t.evolucion.inicial.toFixed(1)}
+                    </p>
+                  </div>
+                  <span className="tablero__evolucion-flecha" aria-hidden="true" />
+                  <div>
+                    <p className="rotulo">Últimas {t.evolucion.n}</p>
+                    <p
+                      className="tablero__cifra tablero__cifra--media"
+                      style={{ color: bandaDe(t.evolucion.reciente).color }}
+                    >
+                      {t.evolucion.reciente.toFixed(1)}
+                    </p>
+                  </div>
+                </div>
+
+                <p
+                  className="tablero__delta"
+                  style={{
+                    color: t.evolucion.delta >= 0 ? 'var(--verde)' : 'var(--oxido)',
+                    borderColor: t.evolucion.delta >= 0 ? 'var(--verde)' : 'var(--oxido)',
+                  }}
+                >
+                  {t.evolucion.delta >= 0 ? '▲' : '▼'} {Math.abs(t.evolucion.delta).toFixed(1)}{' '}
+                  puntos
+                </p>
+
+                <p className="tablero__pie">
+                  {t.evolucion.delta >= 0
+                    ? 'El promedio de tus sesiones recientes está por encima del de las primeras.'
+                    : 'Tus sesiones recientes promedian por debajo de las primeras.'}
+                </p>
+              </div>
+            )}
+          </Panel>
+
+          {/* Calendario de constancia */}
+          <Panel
+            rotulo="Constancia"
+            titulo="Días de práctica"
+            extra={
+              <p className="tablero__pie">
+                {t.diasActivos} de {VENTANA} días
+              </p>
+            }
+          >
+            <div className="tablero__constancia">
+              <div className="tablero__rachas">
+                <div>
+                  <p className="rotulo">Racha actual</p>
+                  <p className="tablero__cifra tablero__cifra--media">
+                    {t.rachaActual}
+                    <span className="tablero__sufijo">{t.rachaActual === 1 ? 'día' : 'días'}</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="rotulo">Racha máxima</p>
+                  <p className="tablero__cifra tablero__cifra--media">
+                    {t.rachaMaxima}
+                    <span className="tablero__sufijo">{t.rachaMaxima === 1 ? 'día' : 'días'}</span>
+                  </p>
+                </div>
+              </div>
+
+              <ol className="tablero__tira">
+                {t.tira.map((d) => (
+                  <li
+                    key={d.fecha.toISOString()}
+                    className="tablero__celda"
+                    style={{ opacity: d.n === 0 ? 0.1 : 0.28 + (d.n / t.maxTira) * 0.72 }}
+                    title={`${d.fecha.toLocaleDateString('es', {
+                      day: '2-digit',
+                      month: 'short',
+                    })} — ${d.n} sesión(es)`}
+                  />
+                ))}
+              </ol>
+              <p className="tablero__pie tablero__tira-pie">
+                <span>hace {VENTANA} días</span>
+                <span>hoy</span>
+              </p>
+            </div>
+          </Panel>
+        </div>
+      </Lamina>
+    </Marco>
   )
 }
 
-function Cabecera({ total, demo }: { total: number; demo: boolean }) {
+function Cabecera({ rotulo, titulo, bajada, total, demo }: PropsCabecera) {
   return (
     <>
       {demo && (
-        <p className="tablero__demo rotulo">
-          Datos de demostración — generados en el navegador, no son tus sesiones. Se reemplazan por
-          las reales apenas completes un caso; <code>?demo=0</code> los apaga.
-        </p>
+        <p className="tablero__demo rotulo">Datos de ejemplo — no son tus sesiones</p>
       )}
       <header className="tablero__cabecera">
         <div>
-          <p className="rotulo">/ Métricas de uso</p>
-          <h2 className="tablero__titulo">Tu actividad</h2>
-          <p className="tablero__bajada">
-            {demo
-              ? 'Vista previa del tablero con datos sintéticos.'
-              : 'Calculado sobre tus sesiones registradas. Sin datos de ejemplo.'}
-          </p>
+          <p className="rotulo">{rotulo}</p>
+          <h2 className="tablero__titulo">{titulo}</h2>
+          <p className="tablero__bajada">{bajada}</p>
         </div>
         <p
           className="tablero__sello rotulo"

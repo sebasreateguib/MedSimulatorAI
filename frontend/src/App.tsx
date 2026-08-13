@@ -3,7 +3,7 @@ import { Autenticacion } from './components/Autenticacion'
 import { Composer } from './components/Composer'
 import { EstadoBackend } from './components/EstadoBackend'
 import { HistorialSesiones } from './components/HistorialSesiones'
-import { MetricasUso } from './components/MetricasUso'
+import { MetricasCasos, MetricasUso } from './components/Metricas'
 import { PanelAcciones } from './components/PanelAcciones'
 import { PanelChat } from './components/PanelChat'
 import { Scorecard } from './components/Scorecard'
@@ -14,7 +14,7 @@ import { SidebarInset, SidebarProvider } from './components/ui/sidebar'
 import { useAuth } from './hooks/useAuth'
 import { useSimulacion } from './hooks/useSimulacion'
 
-type VistaSimulador = 'sesion' | 'historial' | 'metricas'
+type VistaSimulador = 'sesion' | 'historial' | 'metricas' | 'metricas-casos'
 
 /** Lee el hash de la URL y decide la vista inicial. */
 function vistaDesdeHash(): 'landing' | 'simulador' {
@@ -49,8 +49,11 @@ export default function App() {
     return () => window.removeEventListener('popstate', alNavegar)
   }, [])
 
-  const enSesion = sim.estado === 'activa' || sim.estado === 'finalizando' || sim.estado === 'finalizada'
+  const enSesion =
+    sim.estado === 'activa' || sim.estado === 'finalizando' || sim.estado === 'finalizada'
   const bloqueado = sim.estado !== 'activa'
+  /** Los tableros van a ancho completo; el resto conserva el ancho de lectura. */
+  const enTablero = vistaSimulador === 'metricas' || vistaSimulador === 'metricas-casos'
 
   if (vista === 'landing') {
     return <Landing onEntrar={() => setVista('simulador')} />
@@ -95,6 +98,7 @@ export default function App() {
         }}
         onVerHistorial={() => setVistaSimulador('historial')}
         onVerMetricas={() => setVistaSimulador('metricas')}
+        onVerMetricasCasos={() => setVistaSimulador('metricas-casos')}
         tieneEvaluacion={!!sim.evaluacion}
         usuario={auth.usuario}
         onSalir={() => {
@@ -104,7 +108,7 @@ export default function App() {
         }}
       />
       <SidebarInset>
-        <div className="app">
+        <div className={`app${enTablero ? ' app--pleno' : ''}`}>
           <header className="topbar">
             <p className="topbar__contexto">Paciente virtual · especialistas · tutor evaluador</p>
             <div className="topbar__acciones">
@@ -140,6 +144,12 @@ export default function App() {
           {vistaSimulador === 'metricas' && (
             <main className="main main--pleno">
               <MetricasUso />
+            </main>
+          )}
+
+          {vistaSimulador === 'metricas-casos' && (
+            <main className="main main--pleno">
+              <MetricasCasos />
             </main>
           )}
 

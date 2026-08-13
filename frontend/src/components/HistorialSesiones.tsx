@@ -87,10 +87,7 @@ export function HistorialSesiones({ onNuevoCaso }: Props) {
   return (
     <section className="vista-secundaria">
       {demo && (
-        <p className="tablero__demo rotulo">
-          Datos de demostración — generados en el navegador, no son tus sesiones. Se reemplazan
-          por las reales apenas completes un caso; <code>?demo=0</code> los apaga.
-        </p>
+        <p className="tablero__demo rotulo">Datos de ejemplo — no son tus sesiones</p>
       )}
 
       <div className="vista-secundaria__intro">

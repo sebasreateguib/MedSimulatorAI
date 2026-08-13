@@ -1179,9 +1179,20 @@ button:disabled {
    filetes y reja, no con un fondo oscuro. Los acentos son los calibrados
    para papel (`--oxido`, `--ambar`, `--verde`), no sus versiones `--luz-*`,
    que solo contrastan sobre placa. */
-/* El tablero vive en el mismo shell de 1280px que las demás vistas: si se
-   libera el ancho, su topbar es la única que cruza toda la pantalla y la
-   vista deja de pertenecer al resto de la app. */
+/* Los tableros se sueltan del corsé de 1280px que sirve para leer texto: seis
+   paneles ahí adentro quedan apretados y, con el sidebar colapsado, sobraba
+   media pantalla en blanco a los costados. `SidebarInset` ya es `w-full
+   flex-1`, así que sin el `max-width` el ancho sigue al sidebar solo —no hace
+   falta escuchar el estado de colapso desde acá. */
+.app--pleno {
+  max-width: none;
+  /* `.app` centra con `margin: 0 auto`, y `SidebarInset` es un flex column: un
+     margen automático en el eje transversal anula el `stretch`, así que el
+     bloque se encoge a su ancho de contenido y queda centrado. Quitar solo el
+     `max-width` no alcanza —hay que devolverle el estiramiento. */
+  margin-inline: 0;
+  width: 100%;
+}
 
 /* `.main` alinea al tope para que el historial no se estire; acá es al revés:
    las láminas tienen que llegar hasta abajo aunque haya pocos datos. */
@@ -1198,18 +1209,10 @@ button:disabled {
   color: var(--tinta);
 }
 
-/* La última lámina se estira: sin esto queda un zócalo de papel debajo. */
-.tablero__lamina:last-child,
+/* Solo el estado vacío se estira. Las láminas miden lo que mide su contenido:
+   estirar la última para llegar al pie inflaba su panel con cientos de píxeles
+   en blanco, que se leen como un error y no como aire. */
 .tablero__vacio {
-  flex: 1;
-}
-
-.tablero__lamina:last-child {
-  display: flex;
-  flex-direction: column;
-}
-
-.tablero__lamina:last-child .tablero__grid {
   flex: 1;
 }
 
@@ -1291,13 +1294,6 @@ button:disabled {
   border-bottom: 1px solid rgb(166 112 42 / 0.45);
 }
 
-.tablero__demo code {
-  font-family: var(--mono);
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--tinta);
-}
-
 .tablero__cabecera {
   display: flex;
   align-items: flex-end;
@@ -1350,8 +1346,24 @@ button:disabled {
   border-top: 1px solid var(--linea-fuerte);
 }
 
+/* Columnas explícitas, no `auto-fit`: son cuatro tarjetas fijas y el reparto
+   tiene que dar filas completas. Con `auto-fit` una fila de 3 deja dos celdas
+   vacías, y como el fondo de la grilla es el color de las junturas, esos huecos
+   se ven como un bloque gris macizo. Divisores de 4: 4 → 2 → 1. */
 .tablero__kpis {
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .tablero__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .tablero__kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .tablero__grid {
@@ -1404,6 +1416,88 @@ button:disabled {
 .tablero__cifra--chica {
   margin: 0;
   font-size: 22px;
+}
+
+.tablero__cifra--media {
+  margin: 6px 0 0;
+  font-size: 34px;
+}
+
+/* ── Progreso ───────────────────────────────────────────────────────
+   Evolución: dos promedios enfrentados y el salto entre ambos. */
+.tablero__evolucion {
+  display: grid;
+  gap: 22px;
+  justify-items: start;
+}
+
+.tablero__evolucion-par {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+}
+
+/* Flecha dibujada con borde: un glifo tipográfico no se alinea con las cifras
+   y cambia de forma según la fuente que resuelva el sistema. */
+.tablero__evolucion-flecha {
+  position: relative;
+  width: 34px;
+  height: 1px;
+  flex-shrink: 0;
+  align-self: center;
+  background: var(--linea-fuerte);
+}
+
+.tablero__evolucion-flecha::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  border-top: 1px solid var(--linea-fuerte);
+  border-right: 1px solid var(--linea-fuerte);
+  transform: rotate(45deg);
+}
+
+.tablero__delta {
+  margin: 0;
+  padding: 6px 13px;
+  border: 1px solid currentColor;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Constancia: dos rachas arriba, el calendario de la ventana abajo. */
+.tablero__constancia {
+  display: grid;
+  gap: 26px;
+}
+
+.tablero__rachas {
+  display: flex;
+  gap: 44px;
+  flex-wrap: wrap;
+}
+
+/* `auto-fit` con mínimo: la tira reacomoda sus 30 casilleros en una o dos
+   líneas según el ancho, sin que ninguno se deforme. */
+.tablero__tira {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14px, 1fr));
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tablero__tira-pie {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
 }
 
 /* El sufijo acompaña, no compite: se lee como unidad, no como cifra. */
@@ -1611,6 +1705,13 @@ button:disabled {
 }
 
 /* Mapa de calor */
+/* Las celdas son cuadradas con tope de alto: si la grilla se estira a lo ancho
+   del panel, cada una queda como un rectángulo chato. El techo las mantiene
+   cuadradas y deja el sobrante como aire a la derecha. */
+.tablero__calor {
+  max-width: 430px;
+}
+
 .tablero__calor-horas {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
