@@ -27,14 +27,17 @@ function formatearFecha(iso: string) {
 
 interface Props {
   onNuevoCaso: () => void
+  /** Retoma una sesión abierta. Devuelve si pudo, para no navegar en falso. */
+  onReanudar: (sesionId: string) => Promise<boolean>
 }
 
-export function HistorialSesiones({ onNuevoCaso }: Props) {
+export function HistorialSesiones({ onNuevoCaso, onReanudar }: Props) {
   const [estado, setEstado] = useState<Estado>('cargando')
   const [sesiones, setSesiones] = useState<SesionHistorial[]>([])
   const [error, setError] = useState<string | null>(null)
   const [evaluacionVista, setEvaluacionVista] = useState<EvaluacionClinica | null>(null)
   const [cargandoEvaluacionId, setCargandoEvaluacionId] = useState<string | null>(null)
+  const [reanudandoId, setReanudandoId] = useState<string | null>(null)
 
   // Bloque `demo`: llena el historial con sesiones sintéticas cuando no hay
   // reales (o siempre, con `?demo`). Ver src/lib/demo.ts para borrarlo.
@@ -82,6 +85,16 @@ export function HistorialSesiones({ onNuevoCaso }: Props) {
     } finally {
       setCargandoEvaluacionId(null)
     }
+  }
+
+  const retomar = async (sesionId: string) => {
+    if (reanudandoId) return
+    setReanudandoId(sesionId)
+    setError(null)
+    // Si falla, `onReanudar` deja el mensaje en el error global de la app y no
+    // se navega: la fila vuelve a quedar disponible.
+    const pudo = await onReanudar(sesionId)
+    if (!pudo) setReanudandoId(null)
   }
 
   return (
@@ -137,6 +150,17 @@ export function HistorialSesiones({ onNuevoCaso }: Props) {
                   disabled={cargandoEvaluacionId === s.sesion_id}
                 >
                   {cargandoEvaluacionId === s.sesion_id ? '…' : `${s.puntaje}/100`}
+                </button>
+              ) : s.estado === 'activa' && !demo ? (
+                // Una sesión abierta se retoma donde quedó. En demo no: las
+                // sesiones sintéticas no existen en la base.
+                <button
+                  type="button"
+                  className="btn btn--fantasma historial__retomar"
+                  onClick={() => retomar(s.sesion_id)}
+                  disabled={reanudandoId !== null}
+                >
+                  {reanudandoId === s.sesion_id ? 'Abriendo…' : 'Retomar'}
                 </button>
               ) : (
                 <span className="historial__estado mono">

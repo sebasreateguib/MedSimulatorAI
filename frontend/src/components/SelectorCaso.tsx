@@ -9,12 +9,20 @@ interface Props {
 
 export function SelectorCaso({ onSeleccionar, cargando }: Props) {
   const [casos, setCasos] = useState<Caso[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let vigente = true
-    listarCasos().then((c) => {
-      if (vigente) setCasos(c)
-    })
+    listarCasos().then(
+      (c) => vigente && setCasos(c),
+      (err) => {
+        if (!vigente) return
+        // Sin catálogo no hay nada que ofrecer: mostrar el motivo es mejor que
+        // dejar dos esqueletos girando para siempre.
+        setError(err instanceof Error ? err.message : 'No se pudo cargar el catálogo de casos.')
+        setCasos([])
+      },
+    )
     return () => {
       vigente = false
     }
@@ -29,6 +37,18 @@ export function SelectorCaso({ onSeleccionar, cargando }: Props) {
           oculta y no revela el diagnóstico. Al cerrar la sesión, el tutor evalúa tu razonamiento.
         </p>
       </div>
+
+      {error && (
+        <div className="alerta" role="alert">
+          <span>{error}</span>
+        </div>
+      )}
+
+      {!error && casos !== null && casos.length === 0 && (
+        <p className="vacio">
+          No hay casos clínicos cargados. Agregá un archivo YAML en config/casos/ y volvé a entrar.
+        </p>
+      )}
 
       {casos === null ? (
         <div className="selector__grid">

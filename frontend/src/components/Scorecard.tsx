@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Markdown } from './Markdown'
 import type { EvaluacionClinica } from '../types'
 
 interface Props {
@@ -52,12 +53,12 @@ export function Scorecard({ evaluacion, onCerrar, onNuevaSesion }: Props) {
         <div className="scorecard__cuerpo">
           <section>
             <h3>Razonamiento diagnóstico</h3>
-            <p>{evaluacion.razonamiento_diagnostico}</p>
+            <Markdown texto={evaluacion.razonamiento_diagnostico} />
           </section>
 
           <section>
             <h3>Costo-efectividad</h3>
-            <p>{evaluacion.costo_efectividad}</p>
+            <Markdown texto={evaluacion.costo_efectividad} />
           </section>
 
           <section>
@@ -67,7 +68,9 @@ export function Scorecard({ evaluacion, onCerrar, onNuevaSesion }: Props) {
             ) : (
               <ul className="lista lista--aviso">
                 {evaluacion.pruebas_innecesarias.map((p) => (
-                  <li key={p}>{p}</li>
+                  <li key={p}>
+                    <Markdown texto={p} />
+                  </li>
                 ))}
               </ul>
             )}
@@ -80,7 +83,9 @@ export function Scorecard({ evaluacion, onCerrar, onNuevaSesion }: Props) {
             ) : (
               <ul className="lista lista--critico">
                 {evaluacion.errores_criticos.map((e) => (
-                  <li key={e}>{e}</li>
+                  <li key={e}>
+                    <Markdown texto={e} />
+                  </li>
                 ))}
               </ul>
             )}
@@ -89,7 +94,7 @@ export function Scorecard({ evaluacion, onCerrar, onNuevaSesion }: Props) {
           {evaluacion.retroalimentacion && (
             <section className="scorecard__feedback">
               <h3>Retroalimentación</h3>
-              <p>{evaluacion.retroalimentacion}</p>
+              <Markdown texto={evaluacion.retroalimentacion} />
             </section>
           )}
         </div>

@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   History,
   Home,
+  Library,
   LogOut,
   Stethoscope,
   TrendingUp,
@@ -20,6 +21,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { NavMain, type NavItem } from "@/components/shadcn-space/blocks/sidebar-01/nav-main";
+import { MetricasSidebar } from "@/components/MetricasSidebar";
 import { cn } from "@/lib/utils";
 import type { UsuarioPublico } from "@/types";
 
@@ -33,24 +35,29 @@ interface AppSidebarProps {
   onIrInicio: () => void;
   onNuevoCaso: () => void;
   onVerEvaluacion: () => void;
+  onVerEstudio: () => void;
   onVerHistorial: () => void;
   onVerMetricas: () => void;
   onVerMetricasCasos: () => void;
   tieneEvaluacion: boolean;
   usuario: UsuarioPublico | null;
   onSalir: () => void;
+  /** Cambia cuando hay datos nuevos que el resumen del pie tiene que releer. */
+  versionDatos: number;
 }
 
 export function AppSidebar({
   onIrInicio,
   onNuevoCaso,
   onVerEvaluacion,
+  onVerEstudio,
   onVerHistorial,
   onVerMetricas,
   onVerMetricasCasos,
   tieneEvaluacion,
   usuario,
   onSalir,
+  versionDatos,
 }: AppSidebarProps) {
   const navData: NavItem[] = [
     { label: "Simulador", isSection: true },
@@ -59,6 +66,9 @@ export function AppSidebar({
     ...(tieneEvaluacion
       ? [{ title: "Evaluación", icon: ClipboardCheck, href: "#", onClick: onVerEvaluacion }]
       : []),
+
+    { label: "Estudio", isSection: true },
+    { title: "Mi material", icon: Library, href: "#", onClick: onVerEstudio },
 
     { label: "Analítica", isSection: true },
     { title: "Historial", icon: History, href: "#", onClick: onVerHistorial },
@@ -79,8 +89,13 @@ export function AppSidebar({
 
       {/* SidebarContent ya es flex-1 con overflow propio: no necesita una
           altura fija, que además empujaría el pie fuera de la pantalla. */}
+      {/* El resumen va al final del contenido con `mt-auto`: sin eso queda
+          pegado a la navegación y el hueco grande se dibuja igual, más abajo. */}
       <SidebarContent className={cn("mt-2", PADDING_LATERAL)}>
         <NavMain items={navData} />
+        <div className="mt-auto pt-6">
+          <MetricasSidebar version={versionDatos} />
+        </div>
       </SidebarContent>
 
       <SidebarFooter className={cn("border-t border-sidebar-border py-3", PADDING_LATERAL)}>

@@ -79,7 +79,11 @@ function claveDia(d: Date): string {
   return `${d.getFullYear()}-${mes}-${dia}`
 }
 
-function derivar(sesiones: SesionHistorial[]): Tablero {
+/**
+ * Exportada para el resumen del sidebar: que las dos vistas calculen la racha o
+ * el promedio por su cuenta es la forma segura de que un día dejen de coincidir.
+ */
+export function derivar(sesiones: SesionHistorial[]): Tablero {
   const puntuadas = sesiones.filter(
     (s): s is SesionHistorial & { puntaje: number } => s.puntaje !== null,
   )

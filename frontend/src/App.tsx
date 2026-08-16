@@ -8,13 +8,14 @@ import { PanelAcciones } from './components/PanelAcciones'
 import { PanelChat } from './components/PanelChat'
 import { Scorecard } from './components/Scorecard'
 import { SelectorCaso } from './components/SelectorCaso'
+import { Estudio } from './components/estudio/Estudio'
 import { Landing } from './components/landing/Landing'
 import { AppSidebar } from './components/shadcn-space/blocks/sidebar-01/app-sidebar'
 import { SidebarInset, SidebarProvider } from './components/ui/sidebar'
 import { useAuth } from './hooks/useAuth'
 import { useSimulacion } from './hooks/useSimulacion'
 
-type VistaSimulador = 'sesion' | 'historial' | 'metricas' | 'metricas-casos'
+type VistaSimulador = 'sesion' | 'estudio' | 'historial' | 'metricas' | 'metricas-casos'
 
 /** Lee el hash de la URL y decide la vista inicial. */
 function vistaDesdeHash(): 'landing' | 'simulador' {
@@ -29,6 +30,8 @@ export default function App() {
   // Contador para reinyectar el mismo atajo dos veces seguidas en el composer.
   const [borrador, setBorrador] = useState<{ texto: string; n: number }>({ texto: '', n: 0 })
   const [scorecardVisible, setScorecardVisible] = useState(true)
+  // Contador que le avisa al resumen del sidebar que vuelva a leer los datos.
+  const [versionDatos, setVersionDatos] = useState(0)
 
   /** Cambia la vista y sincroniza el hash en la URL. */
   const setVista = useCallback((v: 'landing' | 'simulador') => {
@@ -49,11 +52,22 @@ export default function App() {
     return () => window.removeEventListener('popstate', alNavegar)
   }, [])
 
+  // El resumen del sidebar se refresca al cambiar de vista —así toma el material
+  // recién subido al volver de Estudio— y al quedar evaluada una sesión, que es
+  // el momento en que cambian los casos y el promedio.
+  const sesionEvaluada = sim.estado === 'finalizada'
+  useEffect(() => {
+    setVersionDatos((n) => n + 1)
+  }, [vistaSimulador, sesionEvaluada])
+
   const enSesion =
     sim.estado === 'activa' || sim.estado === 'finalizando' || sim.estado === 'finalizada'
   const bloqueado = sim.estado !== 'activa'
-  /** Los tableros van a ancho completo; el resto conserva el ancho de lectura. */
-  const enTablero = vistaSimulador === 'metricas' || vistaSimulador === 'metricas-casos'
+  /** Los tableros y la mesa de estudio van a ancho completo; el resto conserva el ancho de lectura. */
+  const enTablero =
+    vistaSimulador === 'metricas' ||
+    vistaSimulador === 'metricas-casos' ||
+    vistaSimulador === 'estudio'
 
   if (vista === 'landing') {
     return <Landing onEntrar={() => setVista('simulador')} />
@@ -63,7 +77,7 @@ export default function App() {
   // para quien ya tenía sesión iniciada.
   if (auth.estado === 'verificando') {
     return (
-      <div className="acceso">
+      <div className="acceso-espera">
         <p className="rotulo">Verificando sesión…</p>
       </div>
     )
@@ -96,10 +110,12 @@ export default function App() {
           setVistaSimulador('sesion')
           setScorecardVisible(true)
         }}
+        onVerEstudio={() => setVistaSimulador('estudio')}
         onVerHistorial={() => setVistaSimulador('historial')}
         onVerMetricas={() => setVistaSimulador('metricas')}
         onVerMetricasCasos={() => setVistaSimulador('metricas-casos')}
         tieneEvaluacion={!!sim.evaluacion}
+        versionDatos={versionDatos}
         usuario={auth.usuario}
         onSalir={() => {
           sim.reiniciar()
@@ -130,12 +146,25 @@ export default function App() {
             </div>
           )}
 
+          {vistaSimulador === 'estudio' && (
+            <main className="main main--pleno main--estudio">
+              <Estudio />
+            </main>
+          )}
+
           {vistaSimulador === 'historial' && (
             <main className="main">
               <HistorialSesiones
                 onNuevoCaso={() => {
                   sim.reiniciar()
                   setVistaSimulador('sesion')
+                }}
+                onReanudar={async (sesionId) => {
+                  const pudo = await sim.reanudar(sesionId)
+                  // Solo se cambia de vista si la sesión se pudo reconstruir;
+                  // si no, el error queda visible sobre el historial.
+                  if (pudo) setVistaSimulador('sesion')
+                  return pudo
                 }}
               />
             </main>

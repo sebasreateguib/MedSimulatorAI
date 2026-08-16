@@ -44,6 +44,35 @@ export function useSimulacion() {
     }
   }, [])
 
+  /**
+   * Retoma una sesión que quedó abierta: trae el caso y la conversación desde
+   * la base y los deja como si nunca se hubiera cerrado la pestaña.
+   *
+   * Devuelve si pudo, para que quien llama no navegue al simulador cuando la
+   * sesión resultó irrecuperable.
+   */
+  const reanudar = useCallback(async (sesionPedida: string) => {
+    setEstado('iniciando')
+    setError(null)
+    setEvaluacion(null)
+    setMensajes([])
+
+    try {
+      const sesion = await api.obtenerSesion(sesionPedida)
+      setSesionId(String(sesion.sesion_id))
+      setCaso(sesion.caso)
+      setMensajes(sesion.mensajes.map((m) => crearMensaje(m.rol, m.contenido)))
+      // Una sesión ya cerrada se puede mirar, pero no se le puede seguir
+      // hablando: el backend rechaza los turnos si no está activa.
+      setEstado(sesion.estado === 'activa' ? 'activa' : 'finalizada')
+      return true
+    } catch (err) {
+      setEstado('inactiva')
+      setError(err instanceof Error ? err.message : 'No se pudo retomar la sesión.')
+      return false
+    }
+  }, [])
+
   const enviar = useCallback(
     async (texto: string) => {
       const contenido = texto.trim()
@@ -64,17 +93,39 @@ export function useSimulacion() {
       const escribirEn = (id: string, fn: (m: Mensaje) => Mensaje) =>
         setMensajes((prev) => prev.map((m) => (m.id === id ? fn(m) : m)))
 
+      // Un turno puede producir varios mensajes de distintos agentes: el
+      // resultado de un estudio (sistema) y después la reacción del paciente.
+      // `actual` apunta al que está recibiendo tokens en este momento.
+      let actual = respuestaId
+
       try {
         await api.enviarTurno(sesionId, contenido, {
           signal: controller.signal,
           onToken: (token) =>
-            escribirEn(respuestaId, (m) => ({ ...m, contenido: m.contenido + token })),
+            escribirEn(actual, (m) => ({ ...m, contenido: m.contenido + token })),
+          onRol: (rol) => {
+            const anterior = actual
+            const idNuevo = nuevoId()
+            actual = idNuevo
+            setMensajes((prev) => {
+              // El mensaje que venía se cierra; si quedó vacío —el marcador
+              // llegó antes que cualquier token— se descarta en vez de dejar
+              // una burbuja en blanco.
+              const cerrados = prev
+                .map((m) => (m.id === anterior ? { ...m, streaming: false } : m))
+                .filter((m) => m.id !== anterior || m.contenido.trim() !== '')
+              return [
+                ...cerrados,
+                { id: idNuevo, rol, contenido: '', streaming: true, timestamp: Date.now() },
+              ]
+            })
+          },
         })
-        escribirEn(respuestaId, (m) => ({ ...m, streaming: false }))
+        escribirEn(actual, (m) => ({ ...m, streaming: false }))
       } catch (err) {
         const mensaje = err instanceof Error ? err.message : 'Error durante el turno.'
         setError(mensaje)
-        escribirEn(respuestaId, (m) => ({
+        escribirEn(actual, (m) => ({
           ...m,
           streaming: false,
           error: true,
@@ -130,6 +181,7 @@ export function useSimulacion() {
     error,
     enviando,
     iniciar,
+    reanudar,
     enviar,
     detener,
     finalizar,

@@ -69,8 +69,8 @@ html:has(.landing) {
 }
 
 .cursor-punto span {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   background: #f0eae0;
 }
 
@@ -81,7 +81,7 @@ html:has(.landing) {
 }
 
 /* Sobre lo accionable: el anillo se abre y el punto se retrae.
-   La retracción se ajustó al punto nuevo: 0.5 lo deja en 5px. */
+   La retracción es proporcional: 0.5 sobre 14px lo deja en 7px. */
 .cursor-punto.cursor--activo span {
   transform: scale(0.5);
 }
@@ -170,17 +170,14 @@ html:has(.landing) {
   color: rgb(237 229 215 / 0.5);
 }
 
-.landing__nav--placa .logo {
-  background: var(--placa-texto);
-  border-color: var(--placa-texto);
+/* La cabecera se invierte al pasar sobre la lámina: la marca la sigue
+   reasignando sus custom properties, sin cambiar el dibujo. */
+.landing__nav--placa .marca {
+  --marca-cruz: var(--luz-hueso);
+  --marca-acento: var(--luz-oxido);
+  --marca-filete: var(--luz-linea);
 }
 
-.landing__nav--placa .logo::before,
-.landing__nav--placa .logo::after {
-  background: var(--placa);
-}
-
-.landing__nav--placa .topbar__marca--boton:hover .logo,
 .landing__nav--placa .estado--caido .estado__punto {
   background: var(--oxido-claro);
 }
@@ -543,16 +540,17 @@ html:has(.landing) {
   margin-bottom: clamp(34px, 4vw, 54px);
 }
 
+/* El numeral solo: sin el § y sin el filete que lo subrayaba. Lo que ordena la
+   sección es la cifra, y el riel de 88px ya la separa del título. */
 .seccion__marca {
   grid-row: 1 / span 3;
   margin: 0;
-  padding-top: 12px;
+  padding-top: 14px;
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.16em;
   color: var(--oxido);
-  border-top: 2px solid var(--oxido);
   align-self: start;
 }
 

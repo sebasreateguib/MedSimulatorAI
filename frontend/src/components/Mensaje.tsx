@@ -1,3 +1,4 @@
+import { Markdown } from './Markdown'
 import type { Mensaje as MensajeType, Rol } from '../types'
 
 const ETIQUETAS: Record<Rol, string> = {
@@ -21,7 +22,9 @@ export function Mensaje({ mensaje, nombrePaciente }: Props) {
     return (
       <div className="mensaje mensaje--sistema">
         <span className="mensaje__etiqueta">{etiqueta}</span>
-        <p>{contenido}</p>
+        {/* Los resultados de estudios vienen en Markdown: el título del estudio
+            en negrita y los valores de laboratorio como lista. */}
+        <Markdown texto={contenido} />
       </div>
     )
   }
@@ -30,7 +33,10 @@ export function Mensaje({ mensaje, nombrePaciente }: Props) {
     <article className={`mensaje mensaje--${rol}${error ? ' mensaje--error' : ''}`}>
       <span className="mensaje__etiqueta">{etiqueta}</span>
       <div className="mensaje__burbuja">
-        {contenido}
+        {/* El estudiante ve su propio texto sin tocar; el resto pasa por el
+            renderizador, que devuelve el texto intacto si no trae markdown
+            —el habla del paciente casi nunca lo trae—. */}
+        {rol === 'estudiante' ? contenido : <Markdown texto={contenido} />}
         {streaming && <span className="cursor" aria-label="escribiendo" />}
       </div>
     </article>

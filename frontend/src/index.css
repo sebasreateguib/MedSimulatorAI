@@ -196,29 +196,24 @@ button:disabled {
   gap: 14px;
 }
 
-/* Marca: cruz clínica grabada, no un logo genérico. */
-.logo {
-  width: 30px;
-  height: 30px;
+/* Marca: lámina partida por la cruz clínica. El dibujo vive en Marca.tsx;
+   acá solo se define de qué color es cada pieza. */
+.marca {
   flex-shrink: 0;
-  position: relative;
-  border: 1px solid var(--tinta);
-  background: var(--tinta);
+  display: block;
+  --marca-placa: var(--tinta);
+  --marca-cruz: var(--papel);
+  --marca-acento: var(--oxido);
+  /* Sobre papel la lámina ya recorta contra el fondo: el filete sobra. */
+  --marca-filete: transparent;
 }
 
-.logo::before,
-.logo::after {
-  content: '';
-  position: absolute;
-  background: var(--papel);
-}
-
-.logo::before {
-  inset: 13px 6px;
-}
-
-.logo::after {
-  inset: 6px 13px;
+/* Sobre placa la lámina se funde con el fondo: la define el filete, y los
+   acentos suben a sus versiones luminosas. */
+.marca--luz {
+  --marca-cruz: var(--luz-hueso);
+  --marca-acento: var(--luz-oxido);
+  --marca-filete: var(--luz-linea);
 }
 
 .main {
@@ -480,13 +475,17 @@ button:disabled {
   color: var(--tinta-tenue);
 }
 
+/* La conversación va un punto más chica que el cuerpo de la app: una respuesta
+   larga con listas y tablas entra de una en pantalla, y el markdown de adentro
+   —que mide en `em`— se achica con ella. */
 .mensaje__burbuja {
   padding: 0 0 0 16px;
   border-left: 2px solid var(--linea-fuerte);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  min-height: 30px;
-  font-size: 17px;
+  min-height: 26px;
+  font-size: 15px;
+  line-height: 1.58;
 }
 
 .mensaje--estudiante {
@@ -533,7 +532,7 @@ button:disabled {
 
 .mensaje--sistema p {
   margin: 0;
-  font-size: 15.5px;
+  font-size: 14px;
   color: var(--tinta-media);
 }
 
@@ -567,7 +566,8 @@ button:disabled {
   flex: 1;
   resize: none;
   font-family: var(--serif-texto);
-  font-size: 16.5px;
+  /* Lo que se escribe tiene que medir lo mismo que lo que se lee arriba. */
+  font-size: 15px;
   font-style: italic;
   line-height: 1.5;
   color: var(--tinta);
@@ -960,27 +960,178 @@ button:disabled {
 }
 
 /* ── Pantalla de acceso (login / registro) ────────────────────────── */
+/* Toma el viewport entero y lo parte en dos: lámina oscura con el relato a
+   la izquierda, formulario sobre papel a la derecha. */
 .acceso {
-  min-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  /* svh: en móvil la barra de herramientas del navegador no recorta la lámina. */
+  height: 100svh;
+  min-height: 100svh;
+  background: var(--papel);
+}
+
+/* Espera de validación del token: mismo lienzo pleno, sin partir. */
+.acceso-espera {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px;
+  height: 100svh;
+  background: var(--papel);
 }
 
-.acceso__panel {
+/* ── Lado izquierdo: la lámina ─────────────────────────────────────── */
+.acceso__lamina {
   position: relative;
-  width: min(420px, 100%);
-  padding: 40px;
-  border: 1px solid var(--tinta);
-  background: var(--papel);
-  box-shadow: 8px 8px 0 var(--tinta);
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 4vh, 48px);
+  padding: clamp(36px, 5vw, 64px) clamp(32px, 5vw, 72px);
+  background: var(--placa);
+  color: var(--placa-texto);
+}
+
+/* Grabado de fondo: mismos halos que el hero, sin canvas ni WebGL. */
+.acceso__lamina::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(52% 40% at 22% 18%, rgb(196 82 63 / 0.24), transparent 70%),
+    radial-gradient(46% 42% at 84% 74%, rgb(166 112 42 / 0.18), transparent 72%);
+}
+
+/* Viñeta: hunde los bordes para que el texto gane siempre. */
+.acceso__lamina::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(120% 95% at 40% 45%, transparent 38%, rgb(20 18 15 / 0.7) 100%);
+}
+
+.acceso__marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.acceso__marca-texto {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--luz-hueso);
+}
+
+/* El discurso empuja las estaciones al pie y se queda con el aire del medio. */
+.acceso__discurso {
+  margin-top: auto;
+}
+
+.acceso__rotulo-luz {
+  margin: 0 0 clamp(18px, 2.4vw, 28px);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--luz-linea);
+  max-width: 32ch;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--luz-tenue);
+}
+
+.acceso__lema {
+  display: grid;
+  margin: 0;
+  font-family: var(--serif-display);
+  font-size: clamp(38px, 4.6vw, 64px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.acceso__lema--acento {
+  color: var(--luz-oxido);
+}
+
+.acceso__estaciones {
+  list-style: none;
+  margin: auto 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--luz-linea);
+  border-block: 1px solid var(--luz-linea);
+}
+
+.acceso__estacion {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 14px;
+  padding: 15px 0;
+  background: var(--placa);
+}
+
+.acceso__estacion-n {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--luz-ambar);
+  padding-top: 2px;
+}
+
+.acceso__estacion h3 {
+  margin: 0 0 3px;
+  font-family: var(--serif-display);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.acceso__estacion p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--luz-tenue);
+}
+
+.acceso__pie {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--luz-tenue);
+}
+
+/* ── Lado derecho: el formulario ───────────────────────────────────── */
+.acceso__forma {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(64px, 8vh, 96px) clamp(28px, 5vw, 64px) clamp(36px, 5vh, 56px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tinta-tenue) transparent;
+}
+
+.acceso__columna {
+  width: min(400px, 100%);
 }
 
 .acceso__volver {
   position: absolute;
-  top: 16px;
-  left: 18px;
+  top: clamp(24px, 4vh, 40px);
+  right: clamp(28px, 5vw, 64px);
   background: none;
   border: none;
   padding: 4px;
@@ -991,18 +1142,26 @@ button:disabled {
   color: var(--oxido);
 }
 
+.acceso__paso {
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--linea);
+  color: var(--oxido);
+}
+
 .acceso__titulo {
-  margin: 20px 0 8px;
+  margin: 0 0 8px;
   font-family: var(--serif-display);
-  font-size: 32px;
+  font-size: clamp(32px, 3.4vw, 42px);
   font-weight: 400;
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .acceso__bajada {
-  margin: 0 0 28px;
+  margin: 0 0 30px;
   font-size: 15px;
+  line-height: 1.55;
   color: var(--tinta-media);
 }
 
@@ -1042,10 +1201,11 @@ button:disabled {
 }
 
 .acceso__alterno {
-  margin: 22px 0 0;
+  margin: 26px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--linea);
   font-size: 14px;
   color: var(--tinta-media);
-  text-align: center;
 }
 
 .acceso__alterno button {
@@ -1057,6 +1217,67 @@ button:disabled {
   color: var(--oxido);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Pantallas medianas: la lámina cede ancho y suelta las estaciones. */
+@media (max-width: 1080px) {
+  .acceso {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+  }
+
+  .acceso__estaciones {
+    display: none;
+  }
+}
+
+/* Angosto: se apila. La lámina queda como cabecera y el formulario abajo. */
+@media (max-width: 820px) {
+  .acceso {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .acceso__lamina {
+    gap: 22px;
+    padding: 28px 24px 32px;
+  }
+
+  .acceso__discurso {
+    margin-top: 0;
+  }
+
+  .acceso__lema {
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: 0.28em;
+    font-size: clamp(30px, 7.6vw, 46px);
+  }
+
+  .acceso__pie {
+    display: none;
+  }
+
+  .acceso__forma {
+    padding: 56px 24px 40px;
+    overflow-y: visible;
+  }
+
+  .acceso__volver {
+    top: 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .acceso__lema {
+    grid-auto-flow: row;
+    gap: 0;
+  }
+
+  .acceso__rotulo-luz {
+    margin-bottom: 14px;
+  }
 }
 
 /* ── Vistas secundarias: historial y métricas ─────────────────────── */
@@ -1172,6 +1393,24 @@ button:disabled {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--tinta-tenue);
+}
+
+/* La sesión abierta es la única fila accionable además del puntaje: se
+   señala con el borde de acento, no con un botón lleno que compita con él. */
+.historial__retomar {
+  flex-shrink: 0;
+  border-color: var(--oxido);
+  color: var(--oxido);
+}
+
+.historial__retomar:hover:not(:disabled) {
+  background: var(--oxido);
+  color: var(--papel);
+  border-color: var(--oxido);
+}
+
+.historial__retomar:disabled {
+  opacity: 0.5;
 }
 
 /* ── Tablero de métricas ──────────────────────────────────────────────
@@ -1827,8 +2066,1076 @@ button:disabled {
   }
 }
 
+/* ── Resumen del sidebar ─────────────────────────────────────────────
+   Dato sobre placa oscura: acá mandan las variables `--luz-*`, que son los
+   mismos acentos subidos en valor hasta que contrastan sobre el negro. Los
+   de papel (`--oxido`, `--tinta-tenue`) se apagan y quedan ilegibles. */
+.resumen {
+  padding-top: 14px;
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.resumen__titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--luz-tenue);
+}
+
+.resumen__demo {
+  padding: 1px 5px;
+  border: 1px solid var(--luz-ambar);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: var(--luz-ambar);
+}
+
+.resumen__grilla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 12px;
+  margin: 0;
+}
+
+.resumen__celda dt {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--luz-tenue);
+}
+
+.resumen__valor {
+  margin: 3px 0 0;
+  font-family: var(--serif-display);
+  font-size: 21px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--luz-hueso);
+}
+
+.resumen__valor--alto {
+  color: var(--luz-verde);
+}
+
+.resumen__sufijo {
+  margin-left: 3px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0;
+  color: var(--luz-tenue);
+}
+
+/* Pulso de constancia: un casillero por día, encendido si hubo sesión.
+   `flex: 1` reparte el ancho, así que sirve igual con 14 días que con 30. */
+.resumen__pulso {
+  display: flex;
+  gap: 2px;
+  margin-top: 14px;
+}
+
+.resumen__dia {
+  flex: 1;
+  height: 10px;
+  background: var(--luz-linea);
+}
+
+.resumen__dia--activo {
+  background: var(--luz-oxido);
+}
+
+.resumen__nota {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  font-style: italic;
+  color: var(--luz-tenue);
+}
+
+/* ── Markdown ─────────────────────────────────────────────────────────
+   Lo que escribe un modelo (tutor, especialista, scorecard, fichas) sale
+   formateado con el mismo lenguaje del resto: filetes en lugar de fondos,
+   rótulos en mono, cero redondeos. Ver src/lib/markdown.ts.
+
+   El espaciado entre bloques va con `gap` y no con márgenes: adentro de una
+   burbuja los márgenes colapsan contra el borde y el primer párrafo queda
+   despegado del rótulo. */
+.md {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7em;
+  /* La burbuja usa pre-wrap para el texto plano; acá los saltos ya son
+     bloques y conservarlos agregaría una línea en blanco entre cada uno. */
+  white-space: normal;
+}
+
+.md__p {
+  margin: 0;
+}
+
+.md__h {
+  margin: 0;
+  font-family: var(--serif-display);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* El primer nivel no se agranda: dentro de una respuesta un h1 de 28px pesa
+   más que el propio mensaje. La jerarquía la dan el filete y el color. */
+.md__h--1 {
+  font-size: 1.12em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--linea-fuerte);
+}
+
+.md__h--2 {
+  font-size: 1.05em;
+}
+
+.md__h--3 {
+  font-family: var(--mono);
+  font-size: 0.72em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--tinta-tenue);
+}
+
+.md__lista {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.md__lista li {
+  margin: 0.18em 0;
+}
+
+.md__lista li::marker {
+  color: var(--tinta-tenue);
+}
+
+.md__lista--anidada {
+  margin-top: 0.25em;
+}
+
+.md__cita {
+  margin: 0;
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid var(--oxido);
+  color: var(--tinta-media);
+  font-style: italic;
+}
+
+.md__cita p {
+  margin: 0;
+}
+
+.md__codigo {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel-hueso);
+  font-family: var(--mono);
+  font-size: 0.78em;
+  line-height: 1.55;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.md__code {
+  padding: 1px 5px;
+  border: 1px solid var(--linea);
+  background: var(--papel-hueso);
+  font-family: var(--mono);
+  font-size: 0.82em;
+}
+
+/* La tabla scrollea dentro de su caja: sin esto, una de seis columnas
+   ensancha la burbuja y arrastra el ancho de toda la conversación. */
+.md__tabla-caja {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tinta-tenue) transparent;
+}
+
+.md__tabla {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.86em;
+}
+
+.md__tabla th {
+  padding: 6px 12px 6px 0;
+  border-bottom: 1px solid var(--linea-fuerte);
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.82em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--tinta-tenue);
+  white-space: nowrap;
+}
+
+.md__tabla td {
+  padding: 6px 12px 6px 0;
+  border-bottom: 1px dotted var(--linea);
+  vertical-align: top;
+}
+
+.md__tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.md__regla {
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--linea-fuerte);
+}
+
+.md strong {
+  font-weight: 600;
+}
+
+.md a {
+  color: var(--oxido);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MESA DE ESTUDIO — biblioteca propia, tutor sobre el material, fichas
+   La sesión clínica es una entrevista; esto es un escritorio: a la
+   izquierda lo que se subió, a la derecha lo que se hace con eso.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* La mesa administra su propio scroll (la biblioteca por un lado, el chat por
+   otro): si scrollea el contenedor de afuera, el composer se va de pantalla. */
+.main--estudio {
+  overflow: hidden;
+}
+
+.estudio {
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--linea-fuerte);
+}
+
+/* ── Biblioteca ───────────────────────────────────────────────────── */
+.biblioteca {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 18px;
+  border-right: 1px solid var(--linea-fuerte);
+  background: var(--papel-hueso);
+  scrollbar-width: thin;
+  scrollbar-color: var(--tinta-tenue) transparent;
+}
+
+.biblioteca__cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.biblioteca__cab .panel__titulo {
+  flex: 1;
+  margin: 0;
+}
+
+.biblioteca__limpiar {
+  padding: 2px 6px;
+  border: 1px solid var(--oxido);
+  background: transparent;
+  color: var(--oxido);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.biblioteca__vacio {
+  margin: 0;
+  font-size: 13.5px;
+  font-style: italic;
+  color: var(--tinta-tenue);
+}
+
+.dropzona {
+  padding: 18px 14px;
+  border: 1px dashed var(--linea-fuerte);
+  text-align: center;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+/* El borde se vuelve sólido y de acento mientras se arrastra: la caja tiene que
+   decir "soltá acá" sin una capa encima que tape la lista. */
+.dropzona--activa {
+  border-style: solid;
+  border-color: var(--oxido);
+  background: rgb(163 50 36 / 0.06);
+}
+
+.dropzona__boton {
+  padding: 9px 16px;
+  border: 1px solid var(--tinta);
+  background: var(--tinta);
+  color: var(--papel);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+}
+
+.dropzona__boton:hover {
+  box-shadow: 3px 3px 0 var(--oxido);
+}
+
+.dropzona__ayuda {
+  margin: 10px 0 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--tinta-tenue);
+}
+
+.subida__nombre {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+  color: var(--tinta-media);
+}
+
+.subida__barra {
+  height: 3px;
+  background: var(--papel-hondo);
+}
+
+.subida__barra span {
+  display: block;
+  height: 100%;
+  background: var(--oxido);
+  transition: width 0.15s linear;
+}
+
+.biblioteca__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.documento {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  border-bottom: 1px dotted var(--linea);
+}
+
+.documento__cuerpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 4px;
+  border: none;
+  background: none;
+  text-align: left;
+}
+
+/* El sello del tipo repite la lógica del `.badge`: dato en mono, no un icono. */
+.documento__tipo {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border: 1px solid var(--linea-fuerte);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--tinta-tenue);
+}
+
+.documento__texto {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.documento__nombre {
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--tinta);
+  overflow-wrap: anywhere;
+}
+
+.documento__meta {
+  font-size: 10px;
+  color: var(--tinta-tenue);
+}
+
+/* Documento en foco: filete de óxido al margen, como la marginalia del resto
+   del sistema. Nada de fondos de color. */
+.documento--foco {
+  border-left: 2px solid var(--oxido);
+  margin-left: -8px;
+  padding-left: 6px;
+}
+
+.documento--foco .documento__tipo {
+  border-color: var(--oxido);
+  color: var(--oxido);
+}
+
+.documento--procesando .documento__nombre,
+.documento--procesando .documento__meta {
+  color: var(--tinta-tenue);
+  font-style: italic;
+}
+
+.documento--error .documento__meta {
+  color: var(--oxido);
+  font-style: normal;
+}
+
+.documento__acciones {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.documento:hover .documento__acciones,
+.documento:focus-within .documento__acciones,
+/* El que falló muestra su botón de reintento sin necesidad de pasar por encima:
+   es la acción que el usuario está buscando en ese momento. */
+.documento--error .documento__acciones {
+  opacity: 1;
+}
+
+.documento__accion {
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--tinta-media);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.documento__accion:hover {
+  border-color: var(--linea-fuerte);
+  color: var(--tinta);
+}
+
+.documento__accion--borrar:hover {
+  border-color: var(--oxido);
+  color: var(--oxido);
+}
+
+/* ── Panel derecho: pestañas ──────────────────────────────────────── */
+.estudio__panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.estudio__pestanas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--linea-fuerte);
+  background: var(--papel-hueso);
+}
+
+.estudio__grupo {
+  display: flex;
+}
+
+.pestana {
+  padding: 13px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--tinta-tenue);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.pestana:hover {
+  color: var(--tinta-media);
+}
+
+.pestana--activa {
+  border-bottom-color: var(--oxido);
+  color: var(--tinta);
+}
+
+/* La conversación de estudio va sin borde propio: ya está dentro de la reja. */
+.conversacion--estudio {
+  flex: 1;
+  min-height: 0;
+  border: none;
+}
+
+.estudio__arranque {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 62ch;
+  padding: 20px 0;
+}
+
+.estudio__arranque p:not(.rotulo) {
+  margin: 0;
+  font-size: 15px;
+  color: var(--tinta-media);
+}
+
+/* ── Citas ────────────────────────────────────────────────────────── */
+/* La marca [n] se vuelve un volado clickeable: el número queda al ras del
+   texto y no ensancha la línea. */
+.cita-marca {
+  display: inline-block;
+  min-width: 15px;
+  margin: 0 1px;
+  padding: 0 3px;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel-hueso);
+  vertical-align: super;
+  font-size: 9.5px;
+  line-height: 1.5;
+  color: var(--tinta-media);
+}
+
+.cita-marca:hover {
+  border-color: var(--oxido);
+  background: var(--oxido);
+  color: var(--papel);
+}
+
+.citas {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-left: 2px solid var(--linea);
+}
+
+.citas__item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  text-align: left;
+  color: var(--tinta-tenue);
+}
+
+.citas__item:hover .citas__fuente {
+  color: var(--oxido);
+  text-decoration: underline;
+}
+
+.citas__n {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  color: var(--tinta-tenue);
+}
+
+.citas__fuente {
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+/* ── Visor de material ────────────────────────────────────────────── */
+.visor {
+  display: flex;
+  flex-direction: column;
+  width: min(920px, 94vw);
+  height: min(88vh, 900px);
+  border: 1px solid var(--tinta);
+  background: var(--papel);
+  box-shadow: 10px 10px 0 rgb(23 19 16 / 0.22);
+  animation: subir 0.22s ease-out;
+}
+
+.visor__cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--linea-fuerte);
+  background: var(--papel-hueso);
+}
+
+.visor__cab h2 {
+  margin: 4px 0 0;
+  font-family: var(--serif-display);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.visor__cerrar {
+  border: none;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--tinta-media);
+}
+
+.visor__extracto {
+  margin: 0;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--linea);
+  border-left: 3px solid var(--oxido);
+  background: rgb(163 50 36 / 0.05);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--tinta-media);
+}
+
+.visor__cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px;
+  background: var(--papel-hondo);
+}
+
+.visor__marco {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel);
+}
+
+.visor__imagen {
+  display: block;
+  max-width: 100%;
+  margin: 0 auto;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel);
+}
+
+.visor__sin-vista {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  text-align: center;
+  color: var(--tinta-media);
+}
+
+.visor__sin-vista a {
+  text-decoration: none;
+}
+
+.visor__texto {
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Flashcards ───────────────────────────────────────────────────── */
+.flashcards,
+.mazo,
+.repaso {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 28px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tinta-tenue) transparent;
+}
+
+.flashcards__generador {
+  max-width: 720px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--linea-fuerte);
+}
+
+.flashcards__ayuda {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: var(--tinta-tenue);
+}
+
+.flashcards__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flashcards__form input {
+  flex: 1;
+  min-width: 220px;
+  padding: 10px 12px;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel);
+  font-family: var(--serif-texto);
+  font-size: 15px;
+  color: var(--tinta);
+}
+
+.flashcards__form input:focus {
+  outline: none;
+  border-color: var(--tinta);
+  box-shadow: 3px 3px 0 var(--tinta);
+}
+
+.flashcards__form input::placeholder {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--tinta-tenue);
+}
+
+.flashcards__form select {
+  padding: 10px 12px;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--tinta-media);
+}
+
+.flashcards__mazos {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mazo-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.mazo-fila__cuerpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 2px;
+  border: none;
+  background: none;
+  text-align: left;
+}
+
+.mazo-fila__cuerpo:hover .mazo-fila__titulo {
+  color: var(--oxido);
+}
+
+.mazo-fila__titulo {
+  font-family: var(--serif-display);
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+
+.mazo-fila__meta {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  color: var(--tinta-tenue);
+}
+
+/* ── Mazo abierto ─────────────────────────────────────────────────── */
+.mazo__cab {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--linea-fuerte);
+}
+
+.mazo__cab h2 {
+  margin: 6px 0 4px;
+  font-family: var(--serif-display);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.mazo__volver {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--tinta-tenue);
+}
+
+.mazo__volver:hover {
+  color: var(--oxido);
+}
+
+.mazo__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ficha {
+  padding: 16px 0;
+  border-bottom: 1px dotted var(--linea);
+}
+
+/* La pregunta es el disparador de la respuesta: toda la línea es clickeable,
+   no solo el rótulo de la derecha. */
+.ficha__anverso {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  font-family: inherit;
+  font-size: 16.5px;
+  line-height: 1.45;
+  color: var(--tinta);
+}
+
+.ficha__ojo {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: 1px solid var(--linea-fuerte);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--tinta-tenue);
+}
+
+.ficha__anverso:hover .ficha__ojo {
+  border-color: var(--oxido);
+  color: var(--oxido);
+}
+
+.ficha--revelada .ficha__ojo {
+  border-color: var(--linea);
+}
+
+.ficha__reverso {
+  margin: 8px 0 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--linea-fuerte);
+  font-size: 15px;
+  color: var(--tinta-media);
+}
+
+.ficha__pie {
+  margin: 8px 0 0;
+  font-size: 10px;
+  color: var(--tinta-tenue);
+}
+
+/* Sin la respuesta a la vista, el pie es lo único que queda debajo de la
+   pregunta: se apaga para no competir con ella. */
+.ficha:not(.ficha--revelada) .ficha__pie {
+  opacity: 0.6;
+}
+
+/* ── Repaso ───────────────────────────────────────────────────────── */
+.repaso {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.repaso__cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.repaso__barra {
+  height: 2px;
+  background: var(--papel-hondo);
+}
+
+.repaso__barra span {
+  display: block;
+  height: 100%;
+  background: var(--oxido);
+  transition: width 0.2s ease;
+}
+
+/* La tarjeta es una lámina sobre la mesa: bordes de tinta y sombra sólida, sin
+   redondeos ni volteretas 3D —esto se lee, no se muestra. */
+.tarjeta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 36px;
+  border: 1px solid var(--tinta);
+  background: var(--papel-hueso);
+  box-shadow: 6px 6px 0 var(--tinta);
+}
+
+.tarjeta__anverso {
+  margin: 0;
+  font-family: var(--serif-display);
+  font-size: 26px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.tarjeta--revelada .tarjeta__anverso {
+  font-size: 20px;
+  color: var(--tinta-media);
+}
+
+.tarjeta__linea {
+  width: 100%;
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--linea-fuerte);
+}
+
+.tarjeta__reverso {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.tarjeta__fuente {
+  margin: 0;
+  font-size: 10px;
+  text-align: center;
+  color: var(--tinta-tenue);
+}
+
+.repaso__acciones {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn--acierto {
+  border-color: var(--verde);
+  background: var(--verde);
+  color: var(--papel);
+}
+
+.btn--acierto:hover:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--tinta);
+}
+
+.btn--fallo {
+  border-color: var(--oxido);
+  background: transparent;
+  color: var(--oxido);
+}
+
+.btn--fallo:hover:not(:disabled) {
+  background: var(--oxido);
+  color: var(--papel);
+}
+
+.repaso__final {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.repaso__final p:not(.rotulo):not(.repaso__marcador) {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--tinta-media);
+}
+
+.repaso__marcador {
+  margin: 0;
+  font-family: var(--serif-display);
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.repaso__marcador span {
+  font-size: 28px;
+  color: var(--tinta-tenue);
+}
+
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 940px) {
+  /* La biblioteca pasa arriba, con alto acotado: en vertical, una lista de
+     documentos larga dejaría el chat fuera de pantalla. */
+  .estudio {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 40vh) minmax(0, 1fr);
+  }
+
+  .biblioteca {
+    border-right: none;
+    border-bottom: 1px solid var(--linea-fuerte);
+  }
+
+  .documento__acciones {
+    opacity: 1;
+  }
+
+  .tarjeta {
+    padding: 28px 22px;
+  }
+
+  .tarjeta__anverso {
+    font-size: 21px;
+  }
+
   .app {
     padding: 0 18px 18px;
   }

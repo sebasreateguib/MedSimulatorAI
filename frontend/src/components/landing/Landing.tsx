@@ -1,4 +1,5 @@
 import { EstadoBackend } from '../EstadoBackend'
+import { Marca } from '../Marca'
 import { useRevelado } from '../../hooks/useRevelado'
 import { useCabecera } from '../../hooks/useCabecera'
 import { CursorSeguidor } from './CursorSeguidor'
@@ -73,7 +74,7 @@ const AGENTES = [
 
 /**
  * Stack real, tomado de requirements.txt, pyproject.toml, docker-compose.yml
- * y package.json. Solo nombres: el porqué de cada elección está en § III.
+ * y package.json. Solo nombres: el porqué de cada elección está en la sección III.
  */
 const STACK = [
   {
@@ -143,7 +144,7 @@ export function Landing({ onEntrar }: Props) {
 
       <header className={clasesNav}>
         <div className="topbar__marca">
-          <span className="logo" aria-hidden="true" />
+          <Marca />
           <div>
             <h2>MedSimulator&nbsp;AI</h2>
             <p>Entrenamiento en razonamiento clínico</p>
@@ -163,10 +164,10 @@ export function Landing({ onEntrar }: Props) {
       <div ref={centinelaRef} aria-hidden="true" />
 
       <main className="landing__cuerpo">
-        {/* § I ── Procedimiento */}
+        {/* I ── Procedimiento */}
         <section id="procedimiento" className="seccion">
           <header className="seccion__cabecera" data-revelar>
-            <p className="seccion__marca">§ I</p>
+            <p className="seccion__marca">I</p>
             <h2 className="seccion__titulo">Cuatro momentos de una consulta</h2>
             <p className="seccion__bajada">
               La competencia que el simulador enseña no es reconocer un cuadro escrito: es
@@ -189,10 +190,10 @@ export function Landing({ onEntrar }: Props) {
           </ol>
         </section>
 
-        {/* § II ── Recorrido de un turno (diagrama) */}
+        {/* II ── Recorrido de un turno (diagrama) */}
         <section id="recorrido" className="seccion seccion--tono">
           <header className="seccion__cabecera" data-revelar>
-            <p className="seccion__marca">§ II</p>
+            <p className="seccion__marca">II</p>
             <h2 className="seccion__titulo">Qué pasa entre la pregunta y la respuesta</h2>
             <p className="seccion__bajada">
               Un router barato clasifica la intención y deriva. Lo que el estudiante ordena pasa por
@@ -204,10 +205,10 @@ export function Landing({ onEntrar }: Props) {
           <DiagramaFlujo />
         </section>
 
-        {/* § III ── Agentes */}
+        {/* III ── Agentes */}
         <section className="seccion">
           <header className="seccion__cabecera" data-revelar>
-            <p className="seccion__marca">§ III</p>
+            <p className="seccion__marca">III</p>
             <h2 className="seccion__titulo">Cinco agentes, tres proveedores, un motivo cada uno</h2>
             <p className="seccion__bajada">
               El modelo se elige por trabajo, no por marca: velocidad donde se nota, verificación
@@ -240,11 +241,11 @@ export function Landing({ onEntrar }: Props) {
           </div>
         </section>
 
-        {/* § IV ── Antialucinación */}
+        {/* IV ── Antialucinación */}
         <section className="seccion">
           <div className="destacado">
             <header className="seccion__cabecera" data-revelar>
-              <p className="seccion__marca">§ IV</p>
+              <p className="seccion__marca">IV</p>
               <h2 className="seccion__titulo">La cita no se pide: se impone</h2>
               <p className="seccion__bajada">
                 Citar la fuente no es una instrucción en el prompt, es una restricción del
@@ -270,10 +271,10 @@ export function Landing({ onEntrar }: Props) {
           </div>
         </section>
 
-        {/* § V ── Tecnologías */}
+        {/* V ── Tecnologías */}
         <section id="tecnologias" className="seccion seccion--tono">
           <header className="seccion__cabecera" data-revelar>
-            <p className="seccion__marca">§ V</p>
+            <p className="seccion__marca">V</p>
             <h2 className="seccion__titulo">Tecnologías</h2>
           </header>
 
@@ -299,10 +300,10 @@ export function Landing({ onEntrar }: Props) {
           </div>
         </section>
 
-        {/* § VI ── Costos */}
+        {/* VI ── Costos */}
         <section className="seccion">
           <header className="seccion__cabecera" data-revelar>
-            <p className="seccion__marca">§ VI</p>
+            <p className="seccion__marca">VI</p>
             <h2 className="seccion__titulo">Cuarenta centavos por sesión de veinte minutos</h2>
             <p className="seccion__bajada">
               Tres caminos posibles para las mismas sesenta vueltas de conversación. El elegido no es
