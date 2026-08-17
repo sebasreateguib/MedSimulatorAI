@@ -9,8 +9,11 @@ asyncpg
 sqlalchemy[asyncio]
 pgvector
 docling
+# Cubre las dos mitades del RAG: bge-m3 para los embeddings y el cross-encoder
+# bge-reranker-v2-m3 para el reranking. FlagEmbedding servía para lo segundo,
+# pero quedó incompatible con transformers 5 y arrastraba datasets, peft e
+# ir-datasets para una sola llamada.
 sentence-transformers
-FlagEmbedding
 rank-bm25
 httpx
 langfuse

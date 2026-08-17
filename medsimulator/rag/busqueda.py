@@ -65,10 +65,20 @@ class BuscadorHibrido:
         
     @property
     def reranker(self):
+        """
+        Carga perezosa del cross-encoder.
+
+        Va por `sentence_transformers.CrossEncoder` y no por `FlagReranker`: son
+        el mismo modelo, pero FlagEmbedding 1.4.0 llama a
+        `tokenizer.prepare_for_model()`, que transformers ya no expone, así que
+        el reranking fallaba en cada consulta. Además ya teníamos
+        sentence-transformers para los embeddings; FlagEmbedding entraba
+        arrastrando datasets, peft e ir-datasets para usar una sola función.
+        """
         if self._reranker is None:
             logger.info("Cargando modelo de reranking BAAI/bge-reranker-v2-m3")
-            from FlagEmbedding import FlagReranker
-            self._reranker = FlagReranker('BAAI/bge-reranker-v2-m3', use_fp16=True)
+            from sentence_transformers import CrossEncoder
+            self._reranker = CrossEncoder("BAAI/bge-reranker-v2-m3")
         return self._reranker
 
     async def buscar(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
@@ -166,17 +176,19 @@ class BuscadorHibrido:
 
         pairs = [[query, doc["texto"]] for doc in results]
         try:
-            scores = self.reranker.compute_score(pairs)
+            scores = self.reranker.predict(pairs)
         except Exception as e:
             logger.warning(
                 "Reranker no disponible (%s); se usa el orden de la fusión RRF.", e
             )
             return results[:top_k]
 
-        # En caso de devolver un solo score cuando len(pairs)==1
-        if isinstance(scores, float):
+        # `predict` devuelve un ndarray de numpy; un escalar suelto aparece
+        # cuando el modelo recibe un único par.
+        if isinstance(scores, (int, float)):
             scores = [scores]
-            
+        scores = [float(s) for s in scores]
+
         for doc, score in zip(results, scores):
             doc["score_rerank"] = score
             

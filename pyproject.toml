@@ -16,8 +16,8 @@ dependencies = [
     "sqlalchemy[asyncio]",
     "pgvector",
     "docling",
+    # Embeddings (bge-m3) y reranking (cross-encoder bge-reranker-v2-m3).
     "sentence-transformers",
-    "FlagEmbedding",
     "rank-bm25",
     "httpx",
     "langfuse",
