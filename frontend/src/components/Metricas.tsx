@@ -48,8 +48,16 @@ interface Tablero {
     n: number
     frac: number
   }[]
-  /** Promedio por caso, ordenado por cantidad de intentos. */
-  porCaso: { titulo: string; intentos: number; promedio: number | null }[]
+  /** Ficha por caso, ordenada por cantidad de intentos. */
+  porCaso: {
+    titulo: string
+    intentos: number
+    promedio: number | null
+    mejor: number | null
+    ultima: Date | null
+    /** Puntaje de cada intento en orden cronológico; `null` si quedó sin evaluar. */
+    marcas: (number | null)[]
+  }[]
   /** Últimos 7 días, cada uno con el conteo por banda. */
   semana: { etiqueta: string; porBanda: Record<BandaId, number> }[]
   /** Grilla día × franja de 3 h con el conteo de sesiones. */
@@ -79,6 +87,20 @@ function claveDia(d: Date): string {
   return `${d.getFullYear()}-${mes}-${dia}`
 }
 
+/** Distancia en días: para un caso practicado importa cuándo fue, no la fecha. */
+function hace(fecha: Date): string {
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  const dia = new Date(fecha)
+  dia.setHours(0, 0, 0, 0)
+  const dias = Math.round((hoy.getTime() - dia.getTime()) / 86_400_000)
+  if (dias <= 0) return 'hoy'
+  if (dias === 1) return 'ayer'
+  if (dias < 30) return `hace ${dias} días`
+  const meses = Math.round(dias / 30)
+  return meses === 1 ? 'hace un mes' : `hace ${meses} meses`
+}
+
 /**
  * Exportada para el resumen del sidebar: que las dos vistas calculen la racha o
  * el promedio por su cuenta es la forma segura de que un día dejen de coincidir.
@@ -92,17 +114,14 @@ export function derivar(sesiones: SesionHistorial[]): Tablero {
   const conteoBanda = { alto: 0, medio: 0, bajo: 0 } as Record<BandaId, number>
   for (const s of puntuadas) conteoBanda[bandaDe(s.puntaje).id] += 1
 
-  // Un caso puede repetirse: agrupamos por título para promediar los intentos.
-  const casos = new Map<string, { intentos: number; suma: number; puntuados: number }>()
+  // Un caso puede repetirse: agrupamos las sesiones por título y de ahí sale
+  // la ficha completa del caso, no solo el conteo.
+  const casos = new Map<string, SesionHistorial[]>()
   for (const s of sesiones) {
     const clave = s.caso_titulo || s.caso_id || 'Sin caso'
-    const acc = casos.get(clave) ?? { intentos: 0, suma: 0, puntuados: 0 }
-    acc.intentos += 1
-    if (s.puntaje !== null) {
-      acc.suma += s.puntaje
-      acc.puntuados += 1
-    }
-    casos.set(clave, acc)
+    const lista = casos.get(clave)
+    if (lista) lista.push(s)
+    else casos.set(clave, [s])
   }
 
   // Semana móvil: 7 cubetas terminando hoy, para que la última columna sea siempre "hoy".
@@ -206,11 +225,23 @@ export function derivar(sesiones: SesionHistorial[]): Tablero {
       frac: puntuadas.length ? conteoBanda[b.id] / puntuadas.length : 0,
     })),
     porCaso: [...casos.entries()]
-      .map(([titulo, a]) => ({
-        titulo,
-        intentos: a.intentos,
-        promedio: a.puntuados ? a.suma / a.puntuados : null,
-      }))
+      .map(([titulo, lista]) => {
+        // El historial llega del más nuevo al más viejo: para que la tira de
+        // intentos se lea como progresión hay que darla vuelta primero.
+        const cron = [...lista].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        )
+        const notas = cron.map((s) => s.puntaje).filter((p): p is number => p !== null)
+        const ultima = cron.length ? new Date(cron[cron.length - 1].created_at) : null
+        return {
+          titulo,
+          intentos: lista.length,
+          promedio: notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : null,
+          mejor: notas.length ? Math.max(...notas) : null,
+          ultima: ultima && !Number.isNaN(ultima.getTime()) ? ultima : null,
+          marcas: cron.map((s) => s.puntaje),
+        }
+      })
       .sort((x, y) => y.intentos - x.intentos),
     semana: semana.map(({ etiqueta, porBanda }) => ({ etiqueta, porBanda })),
     franjas,
@@ -284,15 +315,17 @@ function Panel({
   rotulo,
   titulo,
   extra,
+  clase,
   children,
 }: {
   rotulo: string
   titulo: string
   extra?: ReactNode
+  clase?: string
   children: ReactNode
 }) {
   return (
-    <section className="tablero__panel">
+    <section className={clase ? `tablero__panel ${clase}` : 'tablero__panel'}>
       <header className="tablero__panel-cab">
         <div>
           <p className="rotulo">{rotulo}</p>
@@ -742,18 +775,70 @@ export function MetricasCasos() {
       <Lamina n="01" titulo="Registro" nota="Volumen por caso y últimos movimientos">
         <div className="tablero__grid tablero__grid--duo">
           {/* Casos más practicados */}
-          <Panel rotulo="Volumen por caso" titulo="Más practicados">
+          {/* Una ficha por caso: el conteo solo dejaba el panel casi vacío
+              mientras haya pocos casos, y lo que el alumno quiere saber de un
+              caso repetido es cómo le fue cada vez, no cuántas veces entró. */}
+          <Panel rotulo="Volumen por caso" titulo="Más practicados" clase="tablero__panel--casos">
             <ul className="tablero__ranking">
               {t.porCaso.slice(0, 6).map((c) => (
-                <li key={c.titulo}>
-                  <span className="tablero__ranking-rotulo">{c.titulo}</span>
-                  <span
-                    className="tablero__ranking-barra"
-                    style={{
-                      width: `${(c.intentos / t.porCaso[0].intentos) * 100}%`,
-                    }}
-                  />
-                  <span className="tablero__ranking-n">{c.intentos}</span>
+                <li key={c.titulo} className="tablero__caso">
+                  <div className="tablero__caso-cab">
+                    <span className="tablero__ranking-rotulo">{c.titulo}</span>
+                    <span className="tablero__ranking-n">
+                      {c.intentos}
+                      <span className="tablero__sufijo">
+                        {c.intentos === 1 ? 'intento' : 'intentos'}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div className="tablero__caso-riel">
+                    <span
+                      className="tablero__ranking-barra"
+                      style={{ width: `${(c.intentos / t.porCaso[0].intentos) * 100}%` }}
+                    />
+                  </div>
+
+                  {/* Una columna por intento, del más viejo al más nuevo, con
+                      los umbrales de banda de fondo: la progresión dentro del
+                      caso se lee sin tener que abrir cada sesión. */}
+                  <ol
+                    className="tablero__intentos"
+                    aria-label={`Puntaje de cada intento en ${c.titulo}`}
+                  >
+                    {c.marcas.map((p, i) => (
+                      <li
+                        key={i}
+                        className="tablero__intento"
+                        title={
+                          p !== null
+                            ? `Intento ${i + 1}: ${p}/100`
+                            : `Intento ${i + 1}: sin evaluar`
+                        }
+                      >
+                        {p !== null ? (
+                          <span
+                            className="tablero__intento-col"
+                            style={{ height: `${p}%`, background: bandaDe(p).color }}
+                          />
+                        ) : (
+                          <span className="tablero__intento-col tablero__intento-col--vacia" />
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+
+                  <p className="tablero__pie tablero__caso-pie">
+                    {c.promedio !== null ? (
+                      <>
+                        <span>promedio {c.promedio.toFixed(0)}</span>
+                        <span>mejor {c.mejor}</span>
+                      </>
+                    ) : (
+                      <span>sin sesiones evaluadas</span>
+                    )}
+                    {c.ultima && <span>{hace(c.ultima)}</span>}
+                  </p>
                 </li>
               ))}
             </ul>

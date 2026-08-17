@@ -651,7 +651,6 @@ button:disabled {
 }
 
 .btn--finalizar {
-  width: 100%;
   border-color: var(--oxido);
   color: var(--oxido);
 }
@@ -662,20 +661,134 @@ button:disabled {
   box-shadow: 4px 4px 0 var(--tinta);
 }
 
-.fab {
-  position: fixed;
-  right: 28px;
-  bottom: 28px;
-  z-index: 20;
-  padding: 14px 22px;
+/* Ranura de cierre del panel de acciones: la ocupan por turnos el botón de
+   finalizar y el de ver la evaluación, así que comparten caja. */
+.btn--pie {
+  width: 100%;
+}
+
+/* ── Desplegable: el <select> del atlas ───────────────────────────── */
+/* El menú de un `<select>` lo pinta el sistema operativo y ninguna regla de acá
+   lo alcanza. Estas clases visten al reemplazo de src/components/Desplegable.tsx
+   con lo mismo que el resto de los controles: 1px de tinta, sombra dura de 3px
+   y mono en versalitas. */
+.desplegable {
+  position: relative;
+}
+
+.desplegable__disparador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel);
+  color: var(--tinta-media);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.desplegable__disparador:hover:not(:disabled),
+.desplegable__disparador[aria-expanded='true'] {
+  border-color: var(--tinta);
+  color: var(--tinta);
+}
+
+.desplegable__disparador:focus-visible,
+.desplegable__disparador[aria-expanded='true'] {
+  outline: none;
+  border-color: var(--tinta);
+  box-shadow: 3px 3px 0 var(--tinta);
+}
+
+.desplegable__disparador:disabled {
+  opacity: 0.45;
+}
+
+.desplegable__valor {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Punta dibujada con bordes: un carácter ▾ cambia de forma y de peso según la
+   fuente que resuelva el sistema, y acá al lado hay una sombra de 1px. */
+.desplegable__punta {
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.desplegable__disparador[aria-expanded='true'] .desplegable__punta {
+  transform: translateY(1px) rotate(-135deg);
+}
+
+.desplegable__lista {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
   border: 1px solid var(--tinta);
+  background: var(--papel);
+  box-shadow: 3px 3px 0 var(--tinta);
+}
+
+.desplegable__opcion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--linea);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--tinta-media);
+  cursor: pointer;
+}
+
+.desplegable__opcion:last-child {
+  border-bottom: none;
+}
+
+/* Marcada es la que sigue al puntero o a las flechas; elegida es la vigente.
+   Se distinguen: el bloque de tinta acompaña al recorrido y el tilde se queda
+   quieto en la que está puesta. */
+.desplegable__opcion[data-marcada='true'] {
   background: var(--tinta);
   color: var(--papel);
-  font-family: var(--mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  box-shadow: 5px 5px 0 var(--oxido);
+}
+
+.desplegable__opcion[aria-selected='true'] {
+  color: var(--tinta);
+}
+
+.desplegable__opcion[aria-selected='true'][data-marcada='true'] {
+  color: var(--papel);
+}
+
+.desplegable__tilde {
+  width: 10px;
+  flex: none;
+  color: var(--oxido);
+}
+
+.desplegable__opcion[data-marcada='true'] .desplegable__tilde {
+  color: var(--luz-ambar);
 }
 
 /* ── Panel lateral: ficha clínica ─────────────────────────────────── */
@@ -1322,6 +1435,14 @@ button:disabled {
   background: transparent;
 }
 
+/* Cambio de página: la lista se atenúa en el lugar en vez de desaparecer, así
+   los controles no se mueven bajo el cursor entre una página y la siguiente. */
+.historial__lista--cambiando {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
 .historial__fila--skeleton {
   height: 62px;
   border: 1px dashed var(--linea);
@@ -1393,6 +1514,53 @@ button:disabled {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--tinta-tenue);
+}
+
+/* Paginador del historial */
+.paginador {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--linea);
+}
+
+.paginador__cuenta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--tinta-media);
+  text-align: center;
+}
+
+.paginador__pagina {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  /* No `--tinta-tenue`: a 9.5px da 3.2:1 sobre papel y esto es dato, no adorno. */
+  color: var(--tinta-media);
+}
+
+@media (max-width: 520px) {
+  .paginador {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* La cuenta pasa arriba y los dos botones se reparten el ancho debajo. */
+  .paginador__cuenta {
+    order: -1;
+    width: 100%;
+  }
+
+  .paginador .btn {
+    flex: 1;
+  }
 }
 
 /* La sesión abierta es la única fila accionable además del puntaje: se
@@ -1910,30 +2078,62 @@ button:disabled {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 14px;
+  gap: 22px;
 }
 
-.tablero__ranking li {
+/* La grilla del tablero estira las dos columnas al mismo alto, así que con un
+   solo caso este panel quedaba con medio metro de papel en blanco debajo de una
+   barra. Ahora las fichas se reparten el alto sobrante y son las columnas de
+   intentos las que crecen: el espacio se llena con dato, no con aire. */
+.tablero__panel--casos {
+  display: flex;
+  flex-direction: column;
+}
+
+.tablero__panel--casos .tablero__ranking {
+  flex: 1;
+  grid-auto-rows: minmax(min-content, 1fr);
+}
+
+.tablero__panel--casos .tablero__caso {
+  grid-template-rows: auto auto minmax(128px, 1fr) auto;
+}
+
+/* Ficha de caso: rótulo y conteo en una línea, riel debajo, y al pie la tira
+   de intentos con el resumen. Antes las tres piezas iban en una sola fila y el
+   título quedaba estrangulado en 9rem con puntos suspensivos. */
+.tablero__caso {
   display: grid;
-  grid-template-columns: minmax(0, 9rem) 1fr auto;
-  align-items: center;
-  gap: 12px;
+  gap: 9px;
+}
+
+.tablero__caso-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
 }
 
 .tablero__ranking-rotulo {
   font-family: var(--mono);
   font-size: 11.5px;
-  text-align: right;
   color: var(--tinta-media);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tablero__ranking-barra {
+/* El riel de fondo da la escala: sin él, un solo caso dibuja una barra al
+   100% que no dice contra qué se está comparando. */
+.tablero__caso-riel {
   height: 20px;
+  background: rgb(23 19 16 / 0.06);
+}
+
+.tablero__ranking-barra {
+  display: block;
+  height: 100%;
   min-width: 2px;
-  background: var(--ambar);
   background: linear-gradient(90deg, rgb(166 112 42 / 0.85), rgb(166 112 42 / 0.45));
 }
 
@@ -1941,6 +2141,51 @@ button:disabled {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--ambar);
+  white-space: nowrap;
+}
+
+/* Una columna por intento, en orden cronológico. Los dos filetes del fondo son
+   los umbrales de banda (60 y 80): sin ellos, las alturas se comparan entre sí
+   pero no contra la escala que usa el resto del tablero. */
+.tablero__intentos {
+  list-style: none;
+  margin: 4px 0 2px;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  /* Alto mínimo, no fijo: dentro de la ficha la fila se estira con el panel. */
+  min-height: 128px;
+  background-image:
+    linear-gradient(to top, transparent 60%, var(--linea) 60%, transparent calc(60% + 1px)),
+    linear-gradient(to top, transparent 80%, var(--linea) 80%, transparent calc(80% + 1px));
+}
+
+.tablero__intento {
+  flex: 1 1 0;
+  min-width: 5px;
+  max-width: 26px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.tablero__intento-col {
+  width: 100%;
+  min-height: 2px;
+}
+
+/* Sin evaluar: columna fantasma a la altura del riel, no una barra de color
+   que insinúe un puntaje que nadie calculó. */
+.tablero__intento-col--vacia {
+  height: 100%;
+  border: 1px dashed var(--linea-fuerte);
+}
+
+.tablero__caso-pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
 }
 
 /* Mapa de calor */
@@ -2059,10 +2304,6 @@ button:disabled {
 @media (max-width: 620px) {
   .tablero__dona-fila {
     gap: 22px;
-  }
-
-  .tablero__ranking li {
-    grid-template-columns: minmax(0, 6rem) 1fr auto;
   }
 }
 
@@ -2824,13 +3065,11 @@ button:disabled {
   color: var(--tinta-tenue);
 }
 
-.flashcards__form select {
-  padding: 10px 12px;
-  border: 1px solid var(--linea-fuerte);
-  background: var(--papel);
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--tinta-media);
+/* El desplegable trae su propio vestido: acá solo se lo mide, para que no se
+   estire con el input ni se corte el "20 tarjetas". */
+.flashcards__cantidad {
+  flex: none;
+  width: 140px;
 }
 
 .flashcards__mazos {

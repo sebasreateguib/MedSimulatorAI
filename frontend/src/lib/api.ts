@@ -109,9 +109,43 @@ export function iniciarSesion(casoId: string): Promise<IniciarSesionResponse> {
   })
 }
 
-/** Sesiones pasadas del usuario autenticado, más reciente primero. */
+/**
+ * Sesiones pasadas del usuario autenticado, más reciente primero.
+ *
+ * El `sesion_id` llega como entero (es el PK de la tabla) y toda la interfaz lo
+ * trata como texto —lo recorta, lo compara con ids de estado—, así que se
+ * normaliza acá y no en cada vista.
+ */
+export interface PaginaHistorial {
+  sesiones: SesionHistorial[]
+  /** Sesiones del usuario en total, no las de esta página. */
+  total: number
+}
+
+function normalizarPagina(pagina: PaginaHistorial): PaginaHistorial {
+  return {
+    total: pagina.total,
+    sesiones: pagina.sesiones.map((s) => ({ ...s, sesion_id: String(s.sesion_id) })),
+  }
+}
+
+/** El historial completo. Lo piden los tableros, que calculan sobre todo. */
 export function obtenerHistorial(): Promise<SesionHistorial[]> {
-  return request<SesionHistorial[]>('/simulacion/historial')
+  return request<PaginaHistorial>('/simulacion/historial')
+    .then(normalizarPagina)
+    .then((pagina) => pagina.sesiones)
+}
+
+/** Una página del historial, con el total para saber cuántas quedan. */
+export function obtenerPaginaHistorial(
+  limite: number,
+  desplazamiento = 0,
+): Promise<PaginaHistorial> {
+  const parametros = new URLSearchParams({
+    limite: String(limite),
+    desplazamiento: String(desplazamiento),
+  })
+  return request<PaginaHistorial>(`/simulacion/historial?${parametros}`).then(normalizarPagina)
 }
 
 /** El caso y la conversación de una sesión, para retomarla donde quedó. */

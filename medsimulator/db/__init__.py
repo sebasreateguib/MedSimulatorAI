@@ -28,6 +28,11 @@ async def get_db():
 async def init_db():
     """
     Inicializa las tablas de la base de datos y configura la extensión vector.
+
+    Es una red de seguridad para desarrollo: `create_all` solo crea lo que falta
+    y nunca altera una tabla existente. El esquema real lo gobierna Alembic
+    (`alembic upgrade head`), que es lo único que sabe agregar una columna a una
+    tabla que ya tiene datos.
     """
     from medsimulator.db.models import Base
     import sqlalchemy as sa

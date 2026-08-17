@@ -207,7 +207,10 @@ export default function App() {
                       setScorecardVisible(true)
                       sim.finalizar()
                     }}
+                    onVerEvaluacion={() => setScorecardVisible(true)}
                     finalizando={sim.estado === 'finalizando'}
+                    finalizada={sim.estado === 'finalizada'}
+                    evaluacionLista={!!sim.evaluacion}
                     deshabilitado={bloqueado}
                   />
                 </>
@@ -223,11 +226,6 @@ export default function App() {
             />
           )}
 
-          {sim.estado === 'finalizada' && !scorecardVisible && (
-            <button type="button" className="fab" onClick={() => setScorecardVisible(true)}>
-              Ver evaluación
-            </button>
-          )}
         </div>
       </SidebarInset>
     </SidebarProvider>

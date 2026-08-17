@@ -1,9 +1,9 @@
 import { EstadoBackend } from '../EstadoBackend'
+import { Footer } from '../footer'
 import { Marca } from '../Marca'
 import { useRevelado } from '../../hooks/useRevelado'
 import { useCabecera } from '../../hooks/useCabecera'
 import { CursorSeguidor } from './CursorSeguidor'
-import { DiagramaFlujo } from './DiagramaFlujo'
 import { Hero } from './Hero'
 import '../../styles/landing.css'
 
@@ -74,7 +74,7 @@ const AGENTES = [
 
 /**
  * Stack real, tomado de requirements.txt, pyproject.toml, docker-compose.yml
- * y package.json. Solo nombres: el porqué de cada elección está en la sección III.
+ * y package.json. Solo nombres: el porqué de cada elección está en la sección II.
  */
 const STACK = [
   {
@@ -179,36 +179,23 @@ export function Landing({ onEntrar }: Props) {
           <ol className="pasos">
             {PASOS.map((paso) => (
               <li key={paso.n} className="paso" data-revelar>
-                <span className="paso__n">{paso.n}</span>
+                <div className="paso__registro">
+                  <span className="paso__n">{paso.n}</span>
+                  <span className="paso__margen">{paso.margen}</span>
+                </div>
                 <div className="paso__cuerpo">
                   <h3>{paso.titulo}</h3>
                   <p>{paso.texto}</p>
                 </div>
-                <span className="paso__margen">{paso.margen}</span>
               </li>
             ))}
           </ol>
         </section>
 
-        {/* II ── Recorrido de un turno (diagrama) */}
-        <section id="recorrido" className="seccion seccion--tono">
+        {/* II ── Agentes */}
+        <section id="agentes" className="seccion">
           <header className="seccion__cabecera" data-revelar>
             <p className="seccion__marca">II</p>
-            <h2 className="seccion__titulo">Qué pasa entre la pregunta y la respuesta</h2>
-            <p className="seccion__bajada">
-              Un router barato clasifica la intención y deriva. Lo que el estudiante ordena pasa por
-              validación antes de volver. El tutor no está en el camino: escucha en paralelo, así
-              ningún turno paga su latencia.
-            </p>
-          </header>
-
-          <DiagramaFlujo />
-        </section>
-
-        {/* III ── Agentes */}
-        <section className="seccion">
-          <header className="seccion__cabecera" data-revelar>
-            <p className="seccion__marca">III</p>
             <h2 className="seccion__titulo">Cinco agentes, tres proveedores, un motivo cada uno</h2>
             <p className="seccion__bajada">
               El modelo se elige por trabajo, no por marca: velocidad donde se nota, verificación
@@ -241,11 +228,11 @@ export function Landing({ onEntrar }: Props) {
           </div>
         </section>
 
-        {/* IV ── Antialucinación */}
-        <section className="seccion">
+        {/* III ── Antialucinación */}
+        <section id="antialucinacion" className="seccion">
           <div className="destacado">
             <header className="seccion__cabecera" data-revelar>
-              <p className="seccion__marca">IV</p>
+              <p className="seccion__marca">III</p>
               <h2 className="seccion__titulo">La cita no se pide: se impone</h2>
               <p className="seccion__bajada">
                 Citar la fuente no es una instrucción en el prompt, es una restricción del
@@ -271,39 +258,35 @@ export function Landing({ onEntrar }: Props) {
           </div>
         </section>
 
-        {/* V ── Tecnologías */}
-        <section id="tecnologias" className="seccion seccion--tono">
+        {/* IV ── Tecnologías */}
+        <section id="tecnologias" className="seccion seccion--placa">
           <header className="seccion__cabecera" data-revelar>
-            <p className="seccion__marca">V</p>
+            <p className="seccion__marca">IV</p>
             <h2 className="seccion__titulo">Tecnologías</h2>
           </header>
 
-          <div className="stack-marco" data-revelar>
-            <div className="stack-scroll">
-              <ol className="stack">
-                {STACK.map((capa) => (
-                  <li key={capa.n} className={`tec tec--${capa.tono}`}>
-                    <p className="tec__n">
-                      <span>{capa.n}</span>
-                    </p>
-                    <p className="tec__capa">{capa.capa}</p>
-                    <h3 className="tec__principal">{capa.principal}</h3>
-                    <ul className="tec__resto">
-                      {capa.resto.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
+          <ol className="estratos">
+            {STACK.map((capa) => (
+              <li key={capa.n} className={`estrato estrato--${capa.tono}`} data-revelar>
+                <p className="estrato__rotulo">
+                  <span className="estrato__n">{capa.n}</span>
+                  <span className="estrato__capa">{capa.capa}</span>
+                </p>
+                <h3 className="estrato__principal">{capa.principal}</h3>
+                <ul className="estrato__resto">
+                  {capa.resto.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
         </section>
 
-        {/* VI ── Costos */}
-        <section className="seccion">
+        {/* V ── Costos */}
+        <section id="costos" className="seccion">
           <header className="seccion__cabecera" data-revelar>
-            <p className="seccion__marca">VI</p>
+            <p className="seccion__marca">V</p>
             <h2 className="seccion__titulo">Cuarenta centavos por sesión de veinte minutos</h2>
             <p className="seccion__bajada">
               Tres caminos posibles para las mismas sesenta vueltas de conversación. El elegido no es
@@ -349,10 +332,7 @@ export function Landing({ onEntrar }: Props) {
         </button>
       </section>
 
-      <footer className="landing__footer">
-        <span className="landing__footer-marca">MedSimulator&nbsp;AI</span>
-        <span>Guías públicas · PubMed OA · openFDA</span>
-      </footer>
+      <Footer />
     </div>
   )
 }

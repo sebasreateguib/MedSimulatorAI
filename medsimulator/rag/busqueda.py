@@ -2,14 +2,49 @@
 Módulo de búsqueda híbrida que combina BM25 (léxica), pgvector (semántica) y reranking.
 """
 
+import json
 import logging
 from typing import List, Dict, Any
 from rank_bm25 import BM25Okapi
-from medsimulator.rag.embeddings import EmbeddingService
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+
+from medsimulator.db.models import Chunk
+from medsimulator.rag.embeddings import EmbeddingService
 
 logger = logging.getLogger(__name__)
+
+# Qué claves de `Chunk.metadatos` suben al nivel del resultado. La página es la
+# que importa: sin ella una cita dice "según la guía" y no "según la guía, p. 42",
+# que es la diferencia entre una referencia y una referencia verificable.
+CLAVES_PROMOVIDAS = ("pagina", "paginas", "titulo", "url", "doi", "pmid")
+
+
+def _metadatos_de(chunk: Chunk) -> Dict[str, Any]:
+    """
+    Lee `Chunk.metadatos` —que es Text con JSON adentro, no JSONB— y devuelve
+    las claves que el resto del sistema espera al ras del resultado.
+
+    Un chunk viejo, mal serializado o sin metadatos no puede tumbar la búsqueda
+    entera: se registra y se sigue sin ellos.
+    """
+    crudo = getattr(chunk, "metadatos", None)
+    if not crudo:
+        return {}
+
+    try:
+        datos = json.loads(crudo)
+    except (json.JSONDecodeError, TypeError):
+        logger.warning("Chunk %s tiene metadatos ilegibles; se ignoran.", chunk.id)
+        return {}
+
+    if not isinstance(datos, dict):
+        return {}
+
+    promovidas = {c: datos[c] for c in CLAVES_PROMOVIDAS if datos.get(c) is not None}
+    # El resto viaja agrupado: no se pierde, pero tampoco pisa claves propias
+    # del resultado como `texto` o `score_semantico`.
+    return {**promovidas, "metadatos": datos}
+
 
 class BuscadorHibrido:
     """
@@ -18,6 +53,11 @@ class BuscadorHibrido:
     """
     
     def __init__(self, session_factory, embedding_service: EmbeddingService):
+        """
+        `session_factory` es el `async_sessionmaker` de `medsimulator.db`: la
+        consulta vectorial se hace sobre el mismo engine asíncrono que usa la
+        API, no sobre una sesión sincrónica aparte.
+        """
         self.session_factory = session_factory
         self.embedding_service = embedding_service
         self._reranker = None
@@ -54,23 +94,24 @@ class BuscadorHibrido:
 
     async def _busqueda_semantica(self, query_embedding: List[float], top_k: int) -> List[Dict[str, Any]]:
         """Búsqueda vectorial en la BD usando pgvector."""
-        try:
-            from medsimulator.db.models import Chunk
-        except ImportError:
-            logger.warning("No se pudo importar Chunk de medsimulator.db.models")
-            return []
-            
+        # La distancia se pide como columna y no solo en el ORDER BY: así el
+        # score que se propaga al RRF es el real y no un 1.0 fijo para todos.
+        distancia = Chunk.embedding.cosine_distance(query_embedding).label("distancia")
+        stmt = select(Chunk, distancia).order_by(distancia).limit(top_k)
+
         resultados = []
-        with self.session_factory() as session:
-            stmt = select(Chunk).order_by(Chunk.vector.cosine_distance(query_embedding)).limit(top_k)
-            for chunk in session.execute(stmt).scalars():
-                resultados.append({
+        async with self.session_factory() as session:
+            for chunk, dist in (await session.execute(stmt)).all():
+                fila = {
                     "id": chunk.id,
                     "texto": chunk.texto,
-                    "fuente": chunk.fuente,
-                    "pagina": getattr(chunk, 'pagina', None),
-                    "score_semantico": 1.0 # pgvector devuelve distancia, simplificado aquí
-                })
+                    "fuente": chunk.documento_origen,
+                    "seccion": chunk.seccion,
+                    # cosine_distance ∈ [0, 2]; la similitud es su complemento.
+                    "score_semantico": 1.0 - dist,
+                }
+                fila.update(_metadatos_de(chunk))
+                resultados.append(fila)
         return resultados
 
     def _busqueda_lexica(self, query: str, corpus: List[Dict[str, Any]], top_k: int) -> List[Dict[str, Any]]:
@@ -111,13 +152,27 @@ class BuscadorHibrido:
         return fusionados
 
     def _reranquear(self, query: str, results: List[Dict], top_k: int) -> List[Dict]:
-        """Reranking avanzado usando modelo cross-encoder."""
+        """
+        Reranking avanzado usando modelo cross-encoder.
+
+        Si el reranker no se puede usar, se devuelve el orden de la fusión RRF
+        en lugar de propagar el error: el cross-encoder mejora el orden de los
+        candidatos, no los produce. Quedarse sin él degrada la precisión; que
+        tumbe la búsqueda entera deja al sistema sin recuperación ninguna, que
+        es bastante peor.
+        """
         if not results:
             return []
-            
+
         pairs = [[query, doc["texto"]] for doc in results]
-        scores = self.reranker.compute_score(pairs)
-        
+        try:
+            scores = self.reranker.compute_score(pairs)
+        except Exception as e:
+            logger.warning(
+                "Reranker no disponible (%s); se usa el orden de la fusión RRF.", e
+            )
+            return results[:top_k]
+
         # En caso de devolver un solo score cuando len(pairs)==1
         if isinstance(scores, float):
             scores = [scores]

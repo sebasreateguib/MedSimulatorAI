@@ -1,13 +1,14 @@
 """
 Punto de entrada principal para la aplicación FastAPI.
 """
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from medsimulator.app.config import settings
-from medsimulator.app.api import auth, simulacion, evaluacion
+from medsimulator.app.api import auth, biblioteca, estudio, simulacion, evaluacion
 from medsimulator.db import init_db, engine
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,12 @@ async def lifespan(app: FastAPI):
         await init_db()
     except Exception as e:
         logger.error(f"Error inicializando la base de datos: {e}")
-        
+
+    # Carga de los modelos de ingesta (layout, OCR, embeddings). Va como tarea
+    # de fondo y no con await: tarda minutos la primera vez, y bloquear el
+    # arranque haría fallar el health check de cualquier despliegue.
+    tarea_precalentado = asyncio.create_task(biblioteca.precalentar_modelos())
+
     # Opcional: Inicializar Langfuse (requerido solo si se configura)
     if settings.LANGFUSE_PUBLIC_KEY and settings.LANGFUSE_SECRET_KEY:
         try:
@@ -44,6 +50,9 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Deteniendo aplicación y cerrando conexiones...")
+    # Si la precarga sigue corriendo al apagar, se corta acá: sin esto asyncio
+    # avisa de una tarea pendiente destruida en cada reinicio del dev server.
+    tarea_precalentado.cancel()
     # Cerrar el pool de conexiones de la base de datos
     await engine.dispose()
     logger.info("Conexiones de base de datos cerradas.")
@@ -70,6 +79,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["Autenticación"])
 app.include_router(simulacion.router, prefix="/simulacion", tags=["Simulación"])
 app.include_router(evaluacion.router, prefix="/evaluacion", tags=["Evaluación"])
+app.include_router(biblioteca.router, prefix="/biblioteca", tags=["Biblioteca"])
+app.include_router(estudio.router, prefix="/estudio", tags=["Estudio"])
 
 @app.get("/health")
 async def health_check():

@@ -12,6 +12,11 @@ class EmbeddingService:
     """
     Servicio para generar embeddings usando el modelo BAAI/bge-m3.
     La carga del modelo es perezosa (lazy) para evitar demoras innecesarias.
+
+    Sin prefijos de instrucción: `passage:` y `query:` son la convención de la
+    familia E5 (`intfloat/multilingual-e5-*`). BGE-M3 se entrenó sin ellos, así
+    que anteponerlos no marca el rol del texto —lo ensucia con dos tokens de
+    contenido real que entran al vector.
     """
     
     def __init__(self, model_name: str = "BAAI/bge-m3"):
@@ -31,25 +36,22 @@ class EmbeddingService:
         """
         Genera el embedding para un único texto de documento.
         """
-        texto_formateado = f"passage: {texto}"
-        embedding = self.model.encode(texto_formateado, normalize_embeddings=True)
+        embedding = self.model.encode(texto, normalize_embeddings=True)
         return embedding.tolist()
         
     def generar_embedding_query(self, query: str) -> List[float]:
         """
         Genera el embedding para una consulta.
         """
-        query_formateada = f"query: {query}"
-        embedding = self.model.encode(query_formateada, normalize_embeddings=True)
+        embedding = self.model.encode(query, normalize_embeddings=True)
         return embedding.tolist()
         
     def generar_embeddings_batch(self, textos: List[str], batch_size: int = 32) -> List[List[float]]:
         """
         Genera embeddings para una lista de textos (procesamiento por lotes).
         """
-        textos_formateados = [f"passage: {t}" for t in textos]
         embeddings = self.model.encode(
-            textos_formateados,
+            textos,
             batch_size=batch_size,
             normalize_embeddings=True
         )

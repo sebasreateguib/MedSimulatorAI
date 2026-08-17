@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 /**
- * true cuando el viewport no da para el diagrama horizontal.
+ * true cuando el viewport no da para la variante ancha de una pieza.
  *
  * Se consulta con matchMedia y no midiendo el contenedor: el punto de corte
  * queda declarado una sola vez y no hay que observar tamaños en cada frame.

@@ -15,6 +15,19 @@ En vez de presentar un caso clínico escrito, el sistema lo convierte en una int
 - Un **tutor** observa el razonamiento clínico en tiempo real, interviene ante errores peligrosos y produce una evaluación con rúbrica al final, penalizando pruebas innecesarias o invasivas según costo/efectividad.
 - Cada dosis, criterio diagnóstico y decisión terapéutica se **valida contra un corpus documental (RAG)** antes de darse por buena.
 
+### Mesa de estudio
+
+Aparte de la simulación, cada usuario tiene una **biblioteca propia**:
+
+- Sube **PDFs, imágenes, apuntes en txt/md y ofimática (docx, pptx, xlsx, html, epub)**. La ingesta corre en segundo plano —mismo pipeline que el corpus común: Docling → chunking → bge-m3— pero los chunks van a una tabla aparte (`chunks_documento`) filtrada por dueño.
+- Las **imágenes pasan por OCR** (RapidOCR, local). Si no tienen texto legible —un ECG, un esquema, una radiografía— se describen con un **modelo multimodal** y se indexa esa descripción: es la única forma de que una imagen entre a un RAG textual. Se apaga con `VISION_PARA_IMAGENES=false`.
+- **Conversa con un tutor que solo puede responder con ese material**. Cada afirmación se cita con `[n]`, y tocar la marca abre el archivo original en la página citada.
+- **Genera mazos de flashcards** a partir de todo el material o de un tema, y los repasa con las peor sabidas primero.
+
+Endpoints: `POST /biblioteca/documentos` (multipart), `GET /biblioteca/documentos`, `GET /biblioteca/documentos/{id}/archivo`, `POST /biblioteca/documentos/{id}/reintentar`, `POST /biblioteca/buscar`, `POST /estudio/chat` (SSE), `POST /estudio/mazos`, `POST /estudio/flashcards/{id}/repaso`.
+
+Los archivos subidos viven en `MATERIAL_DIR` (por defecto `data/biblioteca/<usuario_id>/`, ya ignorado por git). Cada ingesta tiene un tope de `TIMEOUT_INGESTA_SEGUNDOS` (10 min por defecto); lo que falla queda en estado `error` con el motivo y se puede reintentar sin volver a subir el archivo.
+
 ---
 
 ## 2. Arquitectura
@@ -377,7 +390,9 @@ medsimulator/
 │   ├── config.py                  # pydantic-settings
 │   └── api/
 │       ├── simulacion.py          # iniciar/continuar sesión
-│       └── evaluacion.py          # scorecard
+│       ├── evaluacion.py          # scorecard
+│       ├── biblioteca.py          # material del usuario: subida + ingesta en background
+│       └── estudio.py             # chat sobre el material (SSE) + flashcards
 ├── llm/
 │   ├── client.py                  # factory multi-proveedor
 │   ├── cache.py                   # helpers + verificar_cache()
@@ -388,19 +403,25 @@ medsimulator/
 │   ├── router.py
 │   ├── especialista.py
 │   ├── tutor.py
+│   ├── estudio.py                 # tutor sobre el material propio + generador de fichas
+│   ├── vision.py                  # describe imágenes sin texto (único agente multimodal)
 │   └── tools.py                   # pedir_laboratorio, recetar, diagnosticar...
 ├── rag/
 │   ├── ingesta/
 │   │   ├── docling_parser.py
 │   │   ├── chunking.py            # por sección de guía clínica
+│   │   ├── materiales.py          # ingesta del material subido (pdf/imagen/texto)
 │   │   └── fuentes/               # pubmed.py, openfda.py, gpc.py
 │   ├── embeddings.py              # bge-m3 local
 │   ├── busqueda.py                # híbrida BM25 + vectorial + rerank
+│   ├── busqueda_material.py       # ídem sobre el material del usuario, sin reranker
 │   ├── validador_nativo.py        # con citations de Anthropic
 │   └── validador_casero.py        # structured output + verificación
 ├── db/
 │   ├── models.py
-│   └── migrations/
+│   └── migrations/                # alembic (async), versions/ con el esquema
+├── scripts/
+│   └── precargar_modelos.py       # descarga y warmup de los modelos locales
 ├── config/
 │   ├── agents.yaml                # asignación modelo↔agente
 │   └── casos/                     # casos clínicos en YAML
@@ -433,6 +454,10 @@ cp .env.example .env
 
 # Frontend
 cd frontend && npm install && cd ..
+
+# Modelos locales (~3,5 GB: bge-m3, layout, tablas y OCR).
+# Opcional: la app también los carga sola al arrancar, pero acá se ve el progreso.
+python scripts/precargar_modelos.py
 ```
 
 ### Levantar el proyecto
@@ -449,10 +474,22 @@ uvicorn medsimulator.app.main:app --reload --port 8000
 cd frontend && npm run dev
 ```
 
-El esquema lo crea `init_db()` en el lifespan de FastAPI al arrancar (tablas +
-extensión `vector`); no hace falta correr migraciones. `alembic.ini` ya apunta a
-`medsimulator/db/migrations`, pero ese directorio está vacío: las migraciones
-todavía no están inicializadas, así que `alembic upgrade head` no corre.
+El esquema lo gobierna Alembic:
+
+```bash
+alembic upgrade head     # crea la extensión vector y todas las tablas
+alembic revision --autogenerate -m "descripción"   # tras tocar db/models.py
+```
+
+La URL sale de `DATABASE_URL` (no de `alembic.ini`); `ALEMBIC_DATABASE_URL`
+permite apuntar a otra base sin tocar la de la app. Si venís de una base creada
+antes de las migraciones, `alembic stamp head` la marca como al día sin
+reaplicar nada. `init_db()` sigue corriendo en el lifespan como red de
+seguridad, pero solo crea tablas que falten: no altera las existentes.
+
+Al arrancar, la app carga en segundo plano los modelos de ingesta. La primera
+vez son varios minutos (descarga + warmup); después, unos segundos. Se apaga con
+`PRECARGAR_MODELOS=false`.
 
 El frontend pega a `/api` y Vite lo proxea a `http://localhost:8000`. Para
 apuntar a otro backend, `VITE_API_PROXY_TARGET` en `frontend/.env`.

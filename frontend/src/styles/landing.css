@@ -116,8 +116,10 @@ html:has(.landing) {
 
 /* La cabecera es fija: los anclas tienen que dejarle su altura. */
 #procedimiento,
-#recorrido,
-#tecnologias {
+#agentes,
+#antialucinacion,
+#tecnologias,
+#costos {
   scroll-margin-top: 92px;
 }
 
@@ -520,19 +522,6 @@ html:has(.landing) {
   border-bottom-color: transparent;
 }
 
-/* Sobre medio tono, lo que era papel pasa a ser el tono más hondo. */
-.seccion--tono .dg-caja {
-  fill: var(--papel-hondo);
-}
-
-.seccion--tono .tec:not(:last-child)::after {
-  background: var(--papel-hueso);
-}
-
-.seccion--tono .stack-marco::after {
-  background: linear-gradient(90deg, transparent, var(--papel-hueso) 78%);
-}
-
 .seccion__cabecera {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
@@ -581,61 +570,129 @@ html:has(.landing) {
   border: 1px solid var(--linea);
 }
 
-/* ── Pasos: numerales colgados al margen ──────────────────────────── */
+/* ── Pasos: cuatro fichas de procedimiento ────────────────────────────
+   Antes eran cuatro filas de una lista reglada: mismo peso, mismo ritmo,
+   se leían como índice. Ahora cada momento es una ficha con su propio
+   filete de cabeza, el numeral grande en contorno y el margen técnico
+   alineado a la derecha, como la referencia de una lámina. La columna par
+   baja medio paso: la secuencia se lee en diagonal, no en bloque.
+   ------------------------------------------------------------------- */
 .pasos {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--tinta);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(36px, 5vw, 92px);
+  row-gap: clamp(44px, 5vw, 78px);
+}
+
+/* El desfase va en margen, no en transform: [data-revelar] usa transform
+   para entrar y lo resetea a none al revelarse, que se comería el offset. */
+.paso:nth-child(even) {
+  margin-top: clamp(26px, 4vw, 62px);
 }
 
 .paso {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 128px;
-  gap: 24px;
+  position: relative;
+  padding-top: 20px;
+  border-top: 1px solid var(--tinta);
+}
+
+/* Filete de acento que crece sobre el de tinta al pasar por encima: es el
+   único movimiento de la ficha, y ocurre exactamente donde empieza. */
+.paso::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--oxido);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.paso:hover::before {
+  transform: scaleX(1);
+}
+
+.paso__registro {
+  display: flex;
   align-items: baseline;
-  padding: 30px 0 28px;
-  border-bottom: 1px solid var(--linea);
-  transition: background 0.3s ease;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(26px, 3vw, 40px);
 }
 
-.paso:hover {
-  background: var(--papel-hueso);
-}
-
+/* Numeral en contorno: a este tamaño, macizo pesaría más que el título. */
 .paso__n {
   font-family: var(--serif-display);
-  font-size: 40px;
-  line-height: 0.8;
+  font-size: clamp(52px, 5.6vw, 84px);
+  line-height: 0.78;
+  letter-spacing: -0.03em;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--linea-fuerte);
+  transition:
+    color 0.4s ease,
+    -webkit-text-stroke-color 0.4s ease;
+}
+
+.paso:hover .paso__n {
   color: var(--oxido);
-  letter-spacing: -0.02em;
+  -webkit-text-stroke-color: var(--oxido);
+}
+
+/* Si el navegador no sabe dibujar el contorno, el numeral vuelve a ser
+   macizo y tenue: sin esto quedaría en color: transparent, invisible. */
+@supports not (-webkit-text-stroke: 1px currentColor) {
+  .paso__n {
+    color: var(--linea-fuerte);
+  }
 }
 
 .paso__cuerpo h3 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   font-family: var(--serif-display);
-  font-size: 27px;
+  font-size: clamp(24px, 2.3vw, 30px);
   font-weight: 400;
-  letter-spacing: -0.015em;
-  line-height: 1.1;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  text-wrap: balance;
 }
 
 .paso__cuerpo p {
   margin: 0;
-  max-width: 62ch;
+  max-width: 46ch;
   color: var(--tinta-media);
   font-size: 16.5px;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .paso__margen {
-  justify-self: end;
   font-family: var(--mono);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.13em;
-  color: var(--tinta-tenue);
-  border-bottom: 1px dotted var(--linea-fuerte);
-  padding-bottom: 2px;
+  color: var(--tinta-media);
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .pasos {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 38px;
+  }
+
+  .paso:nth-child(even) {
+    margin-top: 0;
+  }
+
+  .paso__registro {
+    margin-bottom: 18px;
+  }
 }
 
 /* ── Tabla de agentes ─────────────────────────────────────────────── */
@@ -714,279 +771,80 @@ html:has(.landing) {
   background: var(--oxido);
 }
 
-/* ── Diagrama de flujo ────────────────────────────────────────────────
-   Sobre papel, como el resto del documento: sin marco ni fondo propio,
-   solo el filete de apertura. La legibilidad la sostiene la jerarquía
-   tipográfica —nombre en serif, dato en mono, índice al margen—, no el
-   contraste de un bloque oscuro.
+/* ── Tecnologías: la placa de tinta ───────────────────────────────────
+   La sección se da vuelta entera. Sobre papel, seis capas de stack son seis
+   filas más de una página que ya viene reglada; sobre tinta son un alto en
+   el camino, y los acentos pueden subir a sus versiones luminosas —las
+   mismas que usa la marca sobre la lámina del hero— en lugar de tener que
+   apagarse para sobrevivir al papel.
+
+   El fondo sangra hasta los bordes de la ventana con la sombra de 100vmax,
+   pero los filetes y el texto se quedan en la medida del contenedor: es el
+   mismo reparto que el hero, fondo a sangre y contenido en su columna.
    ------------------------------------------------------------------- */
-.diagrama-envoltura {
-  margin: 0;
-  border-top: 1px solid var(--tinta);
-}
-
-/* Igual que la tabla: antes de deformarse, el diagrama se desplaza. */
-.diagrama-scroll {
-  overflow-x: auto;
-  padding: clamp(30px, 4vw, 52px) 0 0;
-}
-
-.diagrama {
-  display: block;
-  width: 100%;
-  min-width: 820px;
-  height: auto;
-}
-
-/* La versión en columna entra entera: sin mínimo y sin scroll horizontal. */
-.diagrama--vertical {
-  min-width: 0;
-  max-width: 420px;
-  margin: 0 auto;
-}
-
-.dg-nodo--compacto .dg-nombre {
-  font-size: 19px;
-}
-
-.dg-nodo--compacto .dg-sub {
-  font-size: 9.5px;
-}
-
-/* ── Nodos ── */
-.dg-caja {
-  fill: var(--papel-hueso);
-  stroke: var(--linea-fuerte);
-  stroke-width: 1;
-}
-
-.dg-nodo--critico .dg-caja {
-  fill: rgb(163 50 36 / 0.08);
-  stroke: var(--oxido);
-  stroke-width: 1.3;
-}
-
-/* Punteado: el tutor no está en el camino del turno. */
-.dg-nodo--async .dg-caja {
-  fill: none;
-  stroke: var(--tinta-tenue);
-  stroke-dasharray: 5 5;
-}
-
-.dg-indice {
-  fill: var(--tinta-tenue);
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-}
-
-.dg-nodo--critico .dg-indice {
-  fill: var(--oxido);
-}
-
-/* El nombre en serif y el dato en mono: dos niveles, no un bloque uniforme. */
-.dg-nombre {
-  fill: var(--tinta);
-  font-family: var(--serif-display);
-  font-size: 21px;
-  letter-spacing: -0.01em;
-}
-
-.dg-nodo--critico .dg-nombre {
-  fill: var(--oxido);
-}
-
-.dg-sub {
-  fill: var(--tinta-media);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-}
-
-/* ── Vías ── */
-.dg-via {
-  fill: none;
-  stroke: rgb(23 19 16 / 0.42);
-  stroke-width: 1;
-}
-
-.dg-via--oxido {
-  stroke: var(--oxido);
-}
-
-.dg-via--async {
-  stroke: rgb(23 19 16 / 0.26);
-  stroke-dasharray: 3 5;
-}
-
-.dg-flecha {
-  fill: rgb(23 19 16 / 0.6);
-}
-
-.dg-flecha--oxido {
-  fill: var(--oxido);
-}
-
-/* Pulso: recorre el circuito entero y da dirección sin decorar de más.
-   En tinta, para no competir con el óxido del camino de vuelta. */
-.dg-pulso {
-  fill: none;
-  stroke: var(--tinta);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 26 300;
-  animation: dg-fluir 4.5s linear infinite;
-  opacity: 0.72;
-}
-
-@keyframes dg-fluir {
-  from {
-    stroke-dashoffset: 326;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-.dg-etiqueta {
-  fill: var(--tinta-tenue);
-  font-family: var(--mono);
-  font-size: 9.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-}
-
-.dg-etiqueta--oxido {
-  fill: var(--oxido);
-}
-
-
-@media (prefers-reduced-motion: reduce) {
-  .dg-pulso {
-    animation: none;
-    stroke-dasharray: none;
-    opacity: 0.22;
-  }
-}
-
-/* ── Tecnologías ──────────────────────────────────────────────────────
-   Tarjetas numeradas encadenadas. El acento rota entre los tres colores
-   que ya tiene el sistema —óxido, ámbar, verde— en vez de sumar una paleta
-   nueva: da ritmo a la fila sin romper la identidad de la página.
-   ------------------------------------------------------------------- */
-.stack-marco {
+.seccion--placa {
   position: relative;
+  background: var(--placa);
+  color: var(--placa-texto);
+  box-shadow: 0 0 0 100vmax var(--placa);
+  clip-path: inset(0 -100vmax);
+  border-bottom-color: transparent;
 }
 
-/* Difuminado al borde: avisa que la fila sigue más allá del corte. */
-.stack-marco::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 8px;
-  right: 0;
-  width: 72px;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, var(--papel) 78%);
+/* La cabecera de sección hereda el color del texto, pero el numeral tiene el
+   óxido de papel puesto a mano y sobre tinta se hunde. */
+.seccion--placa .seccion__marca {
+  color: var(--luz-oxido);
 }
 
-/* Con overflow-x: auto el navegador computa overflow-y como auto, no visible:
-   sin este padding, el translateY(-3px) del hover se recorta contra el borde. */
-.stack-scroll {
-  overflow-x: auto;
-  padding: 8px 0 10px;
-  margin-top: -8px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--tinta-tenue) transparent;
+.seccion--placa .seccion__bajada {
+  color: rgb(237 229 215 / 0.62);
 }
 
-.stack {
+.estratos {
+  list-style: none;
   margin: 0;
   padding: 0;
-  list-style: none;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(238px, 1fr);
-  gap: 20px;
-  min-width: 0;
+  border-top: 1px solid rgb(237 229 215 / 0.3);
 }
 
-.tec {
+.estrato {
   position: relative;
-  padding: 22px 22px 26px;
-  border: 1px solid var(--linea-fuerte);
-  background: linear-gradient(180deg, var(--lavado), transparent 46%);
-  transition:
-    border-color 0.25s ease,
-    transform 0.25s cubic-bezier(0.2, 0.7, 0.3, 1);
+  display: grid;
+  grid-template-columns: minmax(140px, 0.6fr) minmax(0, 1fr) minmax(0, 1.25fr);
+  align-items: baseline;
+  gap: 12px clamp(24px, 4vw, 68px);
+  padding: clamp(26px, 2.8vw, 40px) clamp(12px, 1.6vw, 22px) clamp(28px, 3vw, 42px);
+  border-bottom: 1px solid var(--luz-linea);
+  transition: background 0.45s ease;
 }
 
-.tec:hover {
-  border-color: var(--acento);
-  transform: translateY(-3px);
+/* Al pasar por encima la capa se aclara apenas y el nombre se corre: sobre
+   tinta, un lavado del 4% ya es un cambio visible sin encender nada. */
+.estrato:hover {
+  background: rgb(237 229 215 / 0.04);
 }
 
-.tec--oxido {
-  --acento: var(--oxido);
-  --lavado: rgb(163 50 36 / 0.06);
-}
-
-.tec--ambar {
-  --acento: var(--ambar);
-  --lavado: rgb(166 112 42 / 0.06);
-}
-
-.tec--verde {
-  --acento: var(--verde);
-  --lavado: rgb(74 107 86 / 0.06);
-}
-
-/* Número con su regla, como en una lámina numerada. */
-.tec__n {
+.estrato__rotulo {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 12px;
-  margin: 0 0 26px;
+  margin: 0;
+}
+
+.estrato__n {
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.16em;
+  color: rgb(237 229 215 / 0.55);
+  transition: color 0.35s ease;
+}
+
+.estrato:hover .estrato__n {
   color: var(--acento);
 }
 
-.tec__n::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.35;
-}
-
-/* Cadena entre tarjetas: el filete cruza el hueco y el rombo marca la unión. */
-.tec:not(:last-child)::before {
-  content: '';
-  position: absolute;
-  top: 33px;
-  right: -21px;
-  width: 21px;
-  height: 1px;
-  background: var(--linea-fuerte);
-}
-
-.tec:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 29px;
-  right: -14px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid var(--linea-fuerte);
-  background: var(--papel);
-  transform: rotate(45deg);
-}
-
-.tec__capa {
-  margin: 0 0 6px;
+.estrato__capa {
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 500;
@@ -995,35 +853,121 @@ html:has(.landing) {
   color: var(--acento);
 }
 
-.tec__principal {
-  margin: 0 0 18px;
+.estrato__principal {
+  margin: 0;
   font-family: var(--serif-display);
-  font-size: clamp(26px, 2.6vw, 33px);
+  font-size: clamp(28px, 3.2vw, 46px);
   font-weight: 400;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  line-height: 1;
+  letter-spacing: -0.028em;
+  color: var(--placa-texto);
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
-.tec__resto {
+.estrato:hover .estrato__principal {
+  transform: translateX(clamp(5px, 0.7vw, 12px));
+}
+
+/* Las dependencias fluyen en línea, separadas por rombos del acento. */
+.estrato__resto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px 15px;
   margin: 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  gap: 5px;
 }
 
-.tec__resto li {
+.estrato__resto li {
+  display: flex;
+  align-items: baseline;
+  gap: 15px;
   font-family: var(--mono);
   font-size: 11.5px;
-  line-height: 1.4;
-  color: var(--tinta-media);
+  line-height: 1.45;
+  /* 0.62 y no la --luz-tenue del sistema: a 0.42 sobre tinta esto queda en
+     3.5:1 y a 11.5px es texto, no marginalia decorativa. */
+  color: rgb(237 229 215 / 0.62);
   overflow-wrap: anywhere;
 }
 
-.tec__resto li::before {
-  content: '·';
-  margin-right: 7px;
-  color: var(--acento);
+/* El rombo va delante del ítem y no detrás: como separador final de línea
+   quedaba colgando en el aire cada vez que la lista envolvía. */
+.estrato__resto li:not(:first-child)::before {
+  content: '';
+  width: 3px;
+  height: 3px;
+  background: var(--acento);
+  opacity: 0.75;
+  transform: translateY(-3px) rotate(45deg);
+}
+
+/* Sobre tinta mandan los acentos luminosos: son los mismos tres colores del
+   sistema subidos en valor hasta que contrastan contra el negro. */
+.estrato--oxido {
+  --acento: var(--luz-oxido);
+}
+
+.estrato--ambar {
+  --acento: var(--luz-ambar);
+}
+
+.estrato--verde {
+  --acento: var(--luz-verde);
+}
+
+/* Cascada al entrar: las seis capas se revelan en orden, como se leen. */
+.estrato:nth-child(2) {
+  transition-delay: 0.05s;
+}
+
+.estrato:nth-child(3) {
+  transition-delay: 0.1s;
+}
+
+.estrato:nth-child(4) {
+  transition-delay: 0.15s;
+}
+
+.estrato:nth-child(5) {
+  transition-delay: 0.2s;
+}
+
+.estrato:nth-child(6) {
+  transition-delay: 0.25s;
+}
+
+/* En angosto la capa se apila en una columna. El fondo ya sangra por la
+   sombra de la sección, así que acá el estrato no necesita salirse: alcanza
+   con que el filete cruce la medida completa del contenedor. */
+@media (max-width: 900px) {
+  .estrato {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 26px 0 30px;
+  }
+
+  .estrato__rotulo {
+    margin-bottom: 2px;
+  }
+
+  .estrato__principal {
+    font-size: clamp(27px, 7.4vw, 36px);
+  }
+
+  .estrato__resto {
+    gap: 6px 14px;
+  }
+
+  /* En táctil el hover se dispara con el toque y se queda pegado. */
+  .estrato:hover {
+    background: none;
+  }
+
+  .estrato:hover .estrato__principal {
+    transform: none;
+  }
 }
 
 /* ── Cita verificada ──────────────────────────────────────────────── */
@@ -1211,28 +1155,162 @@ html:has(.landing) {
   font-size: 17px;
 }
 
-/* Colofón: una sola línea, filete y nada más. */
-.landing__footer {
+/* ── Colofón: el pie de la lámina ─────────────────────────────────────
+   El filete de arriba cierra la página como el borde inferior de una
+   lámina de atlas. Cinco columnas parejas: la de marca es una más, no un
+   bloque aparte. Abajo, la firma calada en gran cuerpo, que es el remate.
+   ------------------------------------------------------------------- */
+.colofon {
+  overflow: hidden;
+  padding: clamp(44px, 6vw, 76px) clamp(20px, 4vw, 44px) clamp(18px, 2vw, 26px);
+  border-top: 1px solid var(--linea-fuerte);
+}
+
+/* La primera columna es apenas más ancha porque lleva texto corrido y no una
+   lista: al mismo ancho que las otras, el aviso se parte en ocho líneas. */
+.colofon__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) repeat(4, minmax(0, 1fr));
+  gap: 40px clamp(24px, 3.5vw, 56px);
+  align-items: start;
+}
+
+/* En columna: el cuadrante arriba, y debajo la bajada y el aviso. Puesto en
+   fila, el dibujo dejaba un vacío de cinco renglones a su derecha. */
+.colofon__titulo {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 20px clamp(20px, 4vw, 44px) 26px;
-  border-top: 1px solid var(--linea);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.colofon__bajada {
+  margin: 0;
+  max-width: 30ch;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--tinta);
+}
+
+/* El aviso sube al bloque de marca: es la letra chica de la lámina y le da a
+   la columna la altura que la empareja con el índice de al lado. */
+.colofon__aviso {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--tinta-media);
+}
+
+/* Rótulo de columna: el mismo micro-tipo que marca los márgenes del resto
+   de la página, un punto más oscuro para que se lea a 9.5px. */
+.colofon__rotulo {
+  margin: 0 0 16px;
   font-family: var(--mono);
   font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: var(--tinta-tenue);
+  color: var(--tinta-media);
 }
 
-.landing__footer-marca {
-  font-family: var(--serif-display);
-  font-size: 15px;
-  text-transform: none;
-  letter-spacing: -0.01em;
+.colofon__lista {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--tinta-media);
+}
+
+.colofon__enlace {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 11px;
   color: var(--tinta);
+  text-decoration: underline solid transparent;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  transition:
+    color 0.22s ease,
+    text-decoration-color 0.22s ease;
+}
+
+.colofon__enlace:hover {
+  text-decoration-color: var(--linea-fuerte);
+}
+
+/* El número romano repite la numeración de las secciones: el índice es el
+   mismo sistema, no una lista de enlaces cualquiera. */
+.colofon__n {
+  min-width: 1.4em;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--tinta-tenue);
+  transition: color 0.22s ease;
+}
+
+.colofon__enlace:hover .colofon__n {
+  color: var(--oxido);
+}
+
+/* Única línea del pie: separada por un filete y al margen derecho, como el
+   folio de una lámina. */
+.colofon__legal {
+  margin: clamp(34px, 4vw, 52px) 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--linea);
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--tinta-media);
+}
+
+/* Firma: contorno y nada de relleno. En una lámina impresa el nombre grande
+   del pie es un calado, no una mancha de tinta —si se rellenara, pesaría más
+   que todo lo que está arriba. El cuerpo se ata al ancho del viewport para
+   que las doce letras entren en una línea sin desbordar. */
+.colofon__firma {
+  margin: clamp(26px, 4vw, 48px) 0 0;
+  font-family: var(--serif-display);
+  font-size: clamp(2.4rem, 11.5vw, 11rem);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  text-align: center;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgb(23 19 16 / 0.32);
+}
+
+/* Cinco columnas no entran en una tablet: la marca toma el ancho completo,
+   vuelve a fila, y los cuatro índices se reparten de a dos. */
+@media (max-width: 1000px) {
+  .colofon__cuerpo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .colofon__titulo {
+    grid-column: 1 / -1;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 14px 24px;
+  }
+}
+
+@media (max-width: 560px) {
+  .colofon__cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+  }
+
+  .colofon__legal {
+    text-align: left;
+  }
 }
 
 /* ── Revelado al scroll ───────────────────────────────────────────── */
@@ -1244,9 +1322,12 @@ html:has(.landing) {
     transform 0.75s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
+/* `--retraso` escalona a los hermanos que entran juntos —las columnas del
+   colofón— sin necesidad de una animación por elemento. */
 [data-revelar].revelado {
   opacity: 1;
   transform: none;
+  transition-delay: var(--retraso, 0ms);
 }
 
 .paso:nth-child(2) {

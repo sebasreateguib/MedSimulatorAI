@@ -40,6 +40,30 @@ class Settings(BaseSettings):
     def cors_origins_lista(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
+    # Carpeta donde se guardan los archivos que suben los usuarios a su
+    # biblioteca. Relativa a la raíz del repo si no es absoluta; `data/` ya está
+    # en .gitignore, así que el material no se versiona por accidente.
+    MATERIAL_DIR: str = "data/biblioteca"
+
+    # Tope por documento. Un PDF de cientos de páginas escaneadas puede tardar
+    # horas y, con la ingesta serializada, deja a todos los demás esperando.
+    TIMEOUT_INGESTA_SEGUNDOS: int = 600
+
+    # Carga los modelos de ingesta al arrancar en vez de en la primera subida.
+    # Se apaga en tests o en procesos que no van a recibir material.
+    PRECARGAR_MODELOS: bool = True
+
+    # Describe con un modelo multimodal las imágenes de las que el OCR no saca
+    # texto (un ECG, un esquema). Apagarlo las deja como error, sin costo de API.
+    VISION_PARA_IMAGENES: bool = True
+
+    @property
+    def material_dir_absoluto(self) -> Path:
+        ruta = Path(self.MATERIAL_DIR)
+        if not ruta.is_absolute():
+            ruta = Path(__file__).parent.parent.parent / ruta
+        return ruta
+
     # Langfuse (Observabilidad)
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_SECRET_KEY: str = ""

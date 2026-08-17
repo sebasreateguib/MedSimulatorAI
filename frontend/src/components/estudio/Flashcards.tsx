@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as api from '../../lib/api'
+import { Desplegable } from '../Desplegable'
 import { Markdown } from '../Markdown'
 import { Repaso } from './Repaso'
 import type { Mazo } from '../../types'
@@ -193,18 +194,14 @@ export function Flashcards({ seleccion, hayMaterial }: Props) {
             aria-label="Tema del mazo"
             disabled={generando || !hayMaterial}
           />
-          <select
-            value={cantidad}
-            onChange={(e) => setCantidad(Number(e.target.value))}
-            aria-label="Cantidad de tarjetas"
-            disabled={generando || !hayMaterial}
-          >
-            {CANTIDADES.map((n) => (
-              <option key={n} value={n}>
-                {n} tarjetas
-              </option>
-            ))}
-          </select>
+          <Desplegable
+            valor={cantidad}
+            opciones={CANTIDADES.map((n) => ({ valor: n, etiqueta: `${n} tarjetas` }))}
+            onCambiar={setCantidad}
+            etiqueta="Cantidad de tarjetas"
+            deshabilitado={generando || !hayMaterial}
+            className="flashcards__cantidad"
+          />
           <button
             type="button"
             className="btn btn--primario"

@@ -38,7 +38,11 @@ interface Props {
   sesionId: string | null
   onAccion: (texto: string) => void
   onFinalizar: () => void
+  onVerEvaluacion: () => void
   finalizando: boolean
+  finalizada: boolean
+  /** Una sesión cerrada que se retoma llega sin scorecard cargado. */
+  evaluacionLista: boolean
   deshabilitado: boolean
 }
 
@@ -47,7 +51,10 @@ export function PanelAcciones({
   sesionId,
   onAccion,
   onFinalizar,
+  onVerEvaluacion,
   finalizando,
+  finalizada,
+  evaluacionLista,
   deshabilitado,
 }: Props) {
   return (
@@ -102,14 +109,28 @@ export function PanelAcciones({
         </p>
       </section>
 
-      <button
-        type="button"
-        className="btn btn--finalizar"
-        onClick={onFinalizar}
-        disabled={finalizando || !sesionId}
-      >
-        {finalizando ? 'Evaluando…' : 'Finalizar y evaluar'}
-      </button>
+      {/* Una sola ranura al pie del panel para los tres estados de la sesión:
+          abierta, evaluando y cerrada. Antes, con el caso cerrado, aparecía
+          un botón flotante fijo a la ventana que caía justo encima de este. */}
+      {finalizada ? (
+        <button
+          type="button"
+          className="btn btn--primario btn--pie"
+          onClick={onVerEvaluacion}
+          disabled={!evaluacionLista}
+        >
+          {evaluacionLista ? 'Ver evaluación' : 'Sin evaluación guardada'}
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="btn btn--finalizar btn--pie"
+          onClick={onFinalizar}
+          disabled={finalizando || !sesionId}
+        >
+          {finalizando ? 'Evaluando…' : 'Finalizar y evaluar'}
+        </button>
+      )}
     </aside>
   )
 }

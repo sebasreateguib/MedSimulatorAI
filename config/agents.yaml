@@ -1,5 +1,17 @@
 paciente:    {provider: groq,       model: llama-3.3-70b-versatile, temperature: 0.8}
 router:      {provider: groq,       model: llama-3.1-8b-instant,    temperature: 0.0}
-tutor:       {provider: anthropic,  model: claude-opus-5, effort: high}
-validador:   {provider: anthropic,  model: claude-opus-5, citations: true}
+# El tutor sigue corriendo sobre Opus, pero facturado por OpenRouter: es la
+# única key que el proyecto tiene cargada.
+tutor:       {provider: openrouter, model: anthropic/claude-opus-5, temperature: 0.0, max_tokens: 2000}
+# Las citations nativas solo existen en la API de Anthropic, y ANTHROPIC_API_KEY
+# está vacía: con `provider: anthropic` el validador arranca y falla en cada
+# llamada. Corre entonces sobre Groq con verificación casera —el modelo cita y
+# el código comprueba que la cita esté de verdad en el chunk—. Para volver a las
+# citations nativas: cargar la key y poner
+# `{provider: anthropic, model: claude-opus-5, citations: true}`.
+validador:   {provider: groq,       model: llama-3.3-70b-versatile, temperature: 0.0}
 especialista: {provider: openrouter, model: deepseek/deepseek-chat}
+estudio:     {provider: groq,       model: llama-3.3-70b-versatile, temperature: 0.3}
+flashcards:  {provider: groq,       model: llama-3.3-70b-versatile, temperature: 0.4}
+# Único agente multimodal: describe las imágenes que el OCR no puede leer.
+vision:      {provider: openrouter, model: google/gemini-2.5-flash-lite, max_tokens: 1200}

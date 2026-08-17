@@ -16,6 +16,18 @@ class EvaluacionClinica(BaseModel):
     errores_criticos: List[str] = Field(default_factory=list, description="Lista de errores críticos cometidos")
     retroalimentacion: str = Field(..., description="Retroalimentación general para el estudiante")
 
+class FlashcardGenerada(BaseModel):
+    """Una tarjeta de repaso derivada del material del usuario."""
+    anverso: str = Field(..., description="Pregunta o concepto a recordar")
+    reverso: str = Field(..., description="Respuesta completa pero breve")
+    fuente: Optional[str] = Field(None, description="Documento del que sale la tarjeta")
+    pagina: Optional[int] = Field(None, description="Página del documento, si aplica")
+
+class MazoGenerado(BaseModel):
+    """Respuesta estructurada del generador de flashcards."""
+    titulo: str = Field(..., description="Título breve del mazo")
+    flashcards: List[FlashcardGenerada] = Field(default_factory=list)
+
 class AfirmacionValidada(BaseModel):
     """Esquema para la validación de afirmaciones clínicas."""
     afirmacion: str

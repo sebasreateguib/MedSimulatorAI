@@ -11,6 +11,18 @@ from medsimulator.llm.schemas import EvaluacionClinica
 
 logger = logging.getLogger(__name__)
 
+
+class EvaluacionFallida(RuntimeError):
+    """
+    El evaluador no pudo producir un scorecard.
+
+    Antes esto se resolvía devolviendo una evaluación de puntaje 0 con el texto
+    del error adentro. Esa nota falsa se guardaba en la base como cualquier
+    otra: contaba en el promedio del estudiante y en las métricas. Un fallo de
+    infraestructura tiene que verse como un fallo, no como un aplazo.
+    """
+
+
 class AgenteTutor:
     """
     Agente que evalúa silenciosamente el progreso del estudiante,
@@ -19,8 +31,9 @@ class AgenteTutor:
     def __init__(self):
         logger.info("Inicializando AgenteTutor")
         self.client, self.config = get_client_for_agent("tutor")
-        self.model = self.config.get("model", "claude-3-opus-20240229") # Asumiendo Claude Opus real
+        self.model = self.config.get("model", "anthropic/claude-opus-5")
         self.temperature = self.config.get("temperature", 0.0)
+        self.max_tokens = self.config.get("max_tokens", 2000)
         self._eventos: List[Dict[str, Any]] = []
         self._alertas: List[Dict[str, Any]] = []
 
@@ -77,40 +90,51 @@ class AgenteTutor:
             "4. Pruebas innecesarias: Lista específica de laboratorios o imágenes que no debió pedir.\n"
             "5. Errores críticos: Acciones que pusieron en peligro al paciente.\n"
             "6. Retroalimentación: Un mensaje final constructivo.\n\n"
-            "Debe responder obligatoriamente con un JSON que cumpla el esquema de la evaluación."
+            "LARGO: el scorecard se corta si te extendés. 'razonamiento_diagnostico' en 100 "
+            "palabras como máximo, 'costo_efectividad' y 'retroalimentacion' en 60 cada uno, "
+            "y las listas en ítems de una línea. Denso y concreto, sin preámbulos.\n\n"
+            "Respondé SOLO con un objeto JSON que cumpla este esquema, sin texto alrededor:\n"
+            f"{json.dumps(EvaluacionClinica.model_json_schema(), ensure_ascii=False)}"
         )
-        
-        schema_json = EvaluacionClinica.model_json_schema()
-        
+
         try:
-            # Usando tool calling con Claude para asegurar formato estructurado
-            # Se requiere anthropic API
-            response = await self.client.messages.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
-                max_tokens=2000,
+                max_tokens=self.max_tokens,
                 temperature=self.temperature,
-                system=system_prompt,
                 messages=[
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Aquí está el historial clínico:\n{historial_texto}\nPor favor, genera la evaluación en formato JSON estricto."}
                 ],
-                tools=[
-                    {
-                        "name": "generar_evaluacion",
-                        "description": "Genera el reporte de evaluación estructurado.",
-                        "input_schema": schema_json
-                    }
-                ],
-                tool_choice={"type": "tool", "name": "generar_evaluacion"}
+                response_format={"type": "json_object"},
             )
-            
-            # Extraer los argumentos del tool_call
-            for content_block in response.content:
-                if content_block.type == "tool_use" and content_block.name == "generar_evaluacion":
-                    datos_eval = content_block.input
-                    return EvaluacionClinica(**datos_eval)
-                    
-            raise ValueError("Claude no retornó el uso de la herramienta 'generar_evaluacion'")
-            
+
+            eleccion = response.choices[0]
+            crudo = eleccion.message.content or ""
+            if not crudo.strip():
+                raise ValueError("El evaluador devolvió una respuesta vacía.")
+
+            # Un corte por límite de tokens deja el JSON abierto a la mitad. Sin
+            # este chequeo el fallo aparece como "JSON inválido" y se pierde la
+            # causa real, que es max_tokens corto para el largo del historial.
+            if eleccion.finish_reason == "length":
+                raise ValueError(
+                    f"El evaluador se cortó por max_tokens ({self.max_tokens}): "
+                    "el scorecard quedó incompleto."
+                )
+
+            try:
+                datos_eval = json.loads(crudo)
+            except json.JSONDecodeError as e:
+                logger.error(f"El evaluador no devolvió JSON válido: {crudo[:400]}")
+                raise ValueError("El evaluador no devolvió un JSON parseable.") from e
+
+            try:
+                return EvaluacionClinica(**datos_eval)
+            except ValidationError as e:
+                logger.error(f"Scorecard inválido: {e}")
+                raise ValueError("El evaluador devolvió un scorecard con campos faltantes.") from e
+
         except Exception as e:
             logger.error(f"Error generando evaluación final: {e}")
             return EvaluacionClinica(

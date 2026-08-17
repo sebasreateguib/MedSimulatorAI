@@ -16,6 +16,12 @@ resultados_laboratorio:
   troponinas: "Negativas"
   perfil_tiroideo: "TSH normal"
 hallazgos_ecg: "Ritmo irregularmente irregular, ausencia de ondas P, frecuencia ventricular media de 135 lpm. Complejos QRS estrechos."
+# Cada estudio que el caso contempla, con lo que informa. Lo que no esté acá se
+# devuelve como "sin alteraciones relevantes" y el tutor lo evalúa como un
+# pedido sin rendimiento diagnóstico.
+estudios:
+  radiografia de torax: "Índice cardiotorácico normal. Sin infiltrados, sin signos de congestión venosa pulmonar ni derrame pleural."
+  ecocardiograma: "Función sistólica del ventrículo izquierdo conservada (FEVI 60%). Aurícula izquierda levemente dilatada. Sin valvulopatía significativa ni trombo intracavitario visible."
 diagnostico_correcto: "Fibrilación Auricular Aguda (posible Holiday Heart Syndrome)"
 criterios_diagnosticos:
   - "Identificación de ritmo irregular en ECG"
