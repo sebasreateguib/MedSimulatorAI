@@ -30,11 +30,11 @@ class AgenteEstudio:
     def __init__(self):
         logger.info("Inicializando AgenteEstudio")
         self.client, self.config = get_client_for_agent("estudio")
-        self.model = self.config.get("model", "llama-3.3-70b-versatile")
+        self.model = self.config.get("model", "openai/gpt-oss-120b")
         self.temperature = self.config.get("temperature", 0.3)
 
         self.client_fichas, self.config_fichas = get_client_for_agent("flashcards")
-        self.model_fichas = self.config_fichas.get("model", "llama-3.3-70b-versatile")
+        self.model_fichas = self.config_fichas.get("model", "openai/gpt-oss-120b")
 
     # ── Contexto ────────────────────────────────────────────────────
 

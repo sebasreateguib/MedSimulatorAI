@@ -19,7 +19,7 @@ class AgenteRouter:
     def __init__(self):
         logger.info("Inicializando AgenteRouter")
         self.client, self.config = get_client_for_agent("router")
-        self.model = self.config.get("model", "llama-3.1-8b-instant")
+        self.model = self.config.get("model", "openai/gpt-oss-20b")
         self.temperature = self.config.get("temperature", 0.0)
 
     async def clasificar(self, mensaje: str) -> TipoIntencion:

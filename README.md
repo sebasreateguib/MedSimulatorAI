@@ -114,6 +114,20 @@ Un chunk así es peor que no tener el documento: una dosis mal parseada es liter
 
 **Red de seguridad obligatoria:** guardar el número de página de cada chunk. Cuando el sistema valide una dosis, la cita apunta al PDF original y el error de parsing se vuelve auditable en vez de invisible.
 
+**Qué corre adentro de Docling.** No es un parser, son tres modelos locales:
+
+| Modelo | Qué hace | Se enciende con |
+|---|---|---|
+| `docling-layout-heron` | detecta las regiones de la página: título, párrafo, tabla, caption | siempre |
+| `TableFormer` (modo `accurate`) | reconstruye la estructura de cada tabla | `do_table_structure=True` |
+| RapidOCR `PP-OCRv6` (det + cls + rec) | OCR de páginas escaneadas e imágenes | `do_ocr=True` |
+
+**TableFormer es el que sostiene la promesa de arriba.** El layout solo dice "acá hay una tabla"; TableFormer dice cuántas filas y columnas tiene, cuáles celdas son encabezado y cuáles están combinadas. Es un resnet18 + decoder transformer entrenado sobre PubTabNet: recibe el recorte de la tabla y emite una secuencia de tags OTSL —`fcel` (celda con contenido), `ecel` (vacía), `ched` (encabezado de columna), `nl` (fin de fila)— más un bounding box por celda, que después se cruza contra el texto real del PDF para meter cada palabra en su lugar.
+
+Eso es exactamente lo que devuelve `item.export_to_markdown()` en `docling_parser.py`. Y como `ChunkerClinico` nunca parte una tabla —queda como chunk único—, **la salida de TableFormer es literalmente un chunk del corpus**: se embebe así, se recupera así, y el validador la cita así. Un `rowspan` mal predicho pega la dosis al fármaco de la fila de al lado, y no hay ningún paso aguas abajo que lo detecte. Por eso el número de página por chunk no es opcional: es la única forma de volver al PDF y ver si la tabla se leyó bien.
+
+Docling usa el modo `accurate` por defecto. Existe un `fast`, más liviano, pero acá la precisión de una tabla de dosis vale más que unos segundos de ingesta.
+
 ### Embeddings y reranking: locales
 
 ```

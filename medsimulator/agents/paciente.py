@@ -16,7 +16,7 @@ class AgentePaciente:
     def __init__(self):
         logger.info("Inicializando AgentePaciente")
         self.client, self.config = get_client_for_agent("paciente")
-        self.model = self.config.get("model", "llama-3.3-70b-versatile")
+        self.model = self.config.get("model", "openai/gpt-oss-120b")
         self.temperature = self.config.get("temperature", 0.8)
 
     def _construir_prompt(self, caso: Dict[str, Any]) -> str:
@@ -76,7 +76,7 @@ class AgentePaciente:
             )
             return response.choices[0].message.content
         except Exception as e:
-            logger.error(f"Error al generar respuesta del paciente: {e}")
+            logger.error("Error al generar respuesta del paciente: %s", e, exc_info=True)
             return "Lo siento doctor, me siento un poco mareado y no entendí la pregunta."
 
     async def responder_stream(self, mensaje: str, historial: List[Dict[str, Any]], caso: Dict[str, Any]) -> AsyncGenerator[str, None]:
@@ -98,5 +98,5 @@ class AgentePaciente:
                 if chunk.choices and chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
         except Exception as e:
-            logger.error(f"Error al generar respuesta del paciente por stream: {e}")
+            logger.error("Error al generar respuesta del paciente por stream: %s", e, exc_info=True)
             yield "Lo siento doctor, me siento mal..."
