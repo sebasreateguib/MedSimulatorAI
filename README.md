@@ -1,4 +1,6 @@
-# MedSimulator AI
+<p align="center">
+  <img src="frontend/dist/logo.png" alt="MedSimulator AI" width="320"/>
+</p>
 
 Simulador de casos clínicos con paciente virtual, especialistas consultores y tutor evaluador.
 El estudiante no lee un caso en papel: lo **interroga**.
