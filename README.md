@@ -128,6 +128,39 @@ Eso es exactamente lo que devuelve `item.export_to_markdown()` en `docling_parse
 
 Docling usa el modo `accurate` por defecto. Existe un `fast`, más liviano, pero acá la precisión de una tabla de dosis vale más que unos segundos de ingesta.
 
+### Chunking de las fuentes API: una sección por chunk
+
+Docling resuelve los PDFs. Las fuentes que llegan por API —openFDA y PubMed— no pasan por él, y durante un tiempo se ingirieron como **un chunk por documento**: la etiqueta completa del fármaco, o el abstract entero del artículo, en una sola fila.
+
+```python
+# ❌ Cómo estaba: 7.006 caracteres de metoprolol en un solo chunk, 17.307 en dabigatrán
+chunks = [{"texto": f"Medicamento: {n}\nIndicaciones: …\nDosis: …\nContraindicaciones: …",
+           "fuente": f"OpenFDA:{n}",
+           "metadata": info}]   # ← el dict completo, con la etiqueta duplicada adentro
+```
+
+**El chunk es la unidad de recuperación.** El buscador no devuelve "la parte relevante" de un chunk: devuelve el chunk entero, tal como está guardado. De ahí salen tres problemas distintos.
+
+**1. El validador recibía 7.000 caracteres para verificar una dosis.** `AgenteValidador` pide 4 fragmentos (`FRAGMENTOS_POR_CONSULTA`). Si el estudiante indica "metoprolol 50 mg", esos 4 fragmentos eran 4 etiquetas completas —decenas de miles de caracteres— donde la respuesta ocupa unas 200. Además de costar tokens, le da al modelo material de sobra para elegir una cita que suene bien pero venga de otra sección: indicaciones, dosis y contraindicaciones estaban en el mismo bloque, sin ninguna marca que las separara.
+
+**2. Un chunk es un vector, y ese vector era un promedio.** `bge-m3` emite **un** embedding de 1024 dimensiones por chunk. El de una etiqueta completa representa al fármaco en general —para qué sirve, cuánto se da, a quién no— y no se parece particularmente a *"dosis inicial de metoprolol en hipertensión"*, porque no representa esa respuesta. Partida por secciones, la de `Dosis y administración` sí apunta a "esto habla de dosificación".
+
+**3. Los metadatos duplicaban el texto.** `metadata: info` guardaba el dict entero serializado a JSON: 13.289 caracteres para metoprolol, 43.761 para dabigatrán. Y `_metadatos_de` los devuelve dentro de cada fila de resultado, así que el texto viajaba dos veces en cada búsqueda. Nadie lo leía.
+
+**Cómo quedó.** Un chunk por sección, del mismo tamaño que el resto del corpus (`ChunkerClinico.partir_texto`, 1000/200), cada uno con el nombre del fármaco o el título del artículo **dentro del texto**: el chunk se recupera solo, sin sus hermanos, y tiene que ser legible por sí mismo. Eso incluye marca y genérico, porque la mitad léxica de la búsqueda indexa `texto` — sin eso, quien escribe "Savaysa" no recupera la etiqueta de edoxabán.
+
+| | antes | después |
+|---|---|---|
+| Chunks openFDA (20 fármacos) | 20 | 510 |
+| Chunks PubMed (9 artículos) | 9 | 26 |
+| Chunk más grande | 17.307 chars | 1.271 |
+| `metadatos` más grande | 43.761 chars | 612 |
+| `seccion` poblada | nunca | siempre |
+
+**PubMed trae las secciones puestas.** Un abstract estructurado ya viene partido por el autor en `BACKGROUND / METHODS / RESULTS / CONCLUSIONS`; respetar ese corte es gratis y mejor que cualquier heurística nuestra. Las etiquetas se traducen para que `seccion` sea homogénea con el resto del corpus.
+
+**Un bug que apareció mirando eso.** `obtener_articulo` sacaba los identificadores con `.//ArticleId`. El XML de PubMed incluye la lista de referencias, y cada referencia trae su propio `ArticleIdList`: en un artículo con 60 referencias ese path devuelve 63 identificadores mezclados, y el DOI que se guardaba como propio podía ser el de un trabajo citado. Todos los paths van ahora acotados desde la raíz del artículo (`PubmedData/ArticleIdList/ArticleId`), no con `.//`.
+
 ### Embeddings y reranking: locales
 
 ```
@@ -323,6 +356,8 @@ Fuentes que sí se pueden usar:
 
 Con GPC + PubMed OA + openFDA hay corpus suficiente y defendible. Los tratados quedan como referencia externa si la universidad tiene licencia institucional.
 
+**Ojo con qué es openFDA.** Son fichas técnicas aprobadas, no criterio clínico. La etiqueta de metoprolol tartrato **no menciona fibrilación auricular ni una vez**: está aprobada para hipertensión, angina e infarto, y su uso para control de frecuencia en FA es *off-label* respecto de la FDA aunque sea estándar en las guías. Sirve para verificar una dosis, una contraindicación o una interacción; no dice cuándo control de frecuencia le gana a control de ritmo, ni cómo se calcula un CHA₂DS₂-VASc. Para lo que el caso `fa_aguda` espera evaluar, **las GPC no son un extra: son la fuente que decide**.
+
 ---
 
 ## 8. Costos
@@ -423,9 +458,9 @@ medsimulator/
 ├── rag/
 │   ├── ingesta/
 │   │   ├── docling_parser.py
-│   │   ├── chunking.py            # por sección de guía clínica
+│   │   ├── chunking.py            # por sección de guía clínica; `partir_texto` lo reusan las fuentes API
 │   │   ├── materiales.py          # ingesta del material subido (pdf/imagen/texto)
-│   │   └── fuentes/               # pubmed.py, openfda.py, gpc.py
+│   │   └── fuentes/               # pubmed.py, openfda.py, gpc.py — cada una chunkea por sección
 │   ├── embeddings.py              # bge-m3 local
 │   ├── busqueda.py                # híbrida BM25 + vectorial + rerank
 │   ├── busqueda_material.py       # ídem sobre el material del usuario, sin reranker
@@ -511,8 +546,17 @@ apuntar a otro backend, `VITE_API_PROXY_TARGET` en `frontend/.env`.
 ### Ingesta del corpus
 
 ```bash
+# Guías clínicas en PDF. Se bajan a mano a ./corpus/gpc/ (el directorio está en .gitignore)
 python -m medsimulator.rag.ingesta.run --fuente gpc --path ./corpus/gpc/
+
+# Fármacos: uno por invocación. Busca por marca y cae a nombre genérico
+python -m medsimulator.rag.ingesta.run --fuente openfda --query "Metoprolol"
+
+# Evidencia: tope de 10 artículos por consulta (`max_results` en `buscar_pubmed`)
+python -m medsimulator.rag.ingesta.run --fuente pubmed --query "atrial fibrillation rate control"
 ```
+
+La reingesta es idempotente por documento: `procesar_y_guardar` borra los chunks previos de cada `documento_origen` antes de insertar, así que repetir un comando no duplica el corpus.
 
 ---
 
