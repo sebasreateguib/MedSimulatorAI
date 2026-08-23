@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/dist/logo.png" alt="MedSimulator AI" width="320"/>
+  <img src="frontend/public/logo.png" alt="MedSimulator AI" width="320"/>
 </p>
 
 Simulador de casos clínicos con paciente virtual, especialistas consultores y tutor evaluador.
