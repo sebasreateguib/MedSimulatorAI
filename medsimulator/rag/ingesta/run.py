@@ -13,8 +13,12 @@ from sqlalchemy import delete
 from medsimulator.db import async_session_factory
 from medsimulator.db.models import Chunk
 from medsimulator.rag.ingesta.fuentes.gpc import ingestar_directorio
-from medsimulator.rag.ingesta.fuentes.pubmed import buscar_pubmed, obtener_articulos_batch
-from medsimulator.rag.ingesta.fuentes.openfda import buscar_medicamento
+from medsimulator.rag.ingesta.fuentes.pubmed import (
+    buscar_pubmed,
+    chunkear_articulos,
+    obtener_articulos_batch,
+)
+from medsimulator.rag.ingesta.fuentes.openfda import buscar_medicamento, chunkear_medicamento
 from medsimulator.rag.embeddings import EmbeddingService
 
 logger = logging.getLogger(__name__)
@@ -146,20 +150,17 @@ async def main():
             return
         pmids = await buscar_pubmed(args.query)
         articulos = await obtener_articulos_batch(pmids)
-        # Convertir artículos a formato chunk
-        chunks = [{"texto": f"{a['titulo']}\n{a['abstract']}", "fuente": f"PubMed:{a['pmid']}", "metadata": a} for a in articulos if a['abstract']]
-        await procesar_y_guardar(chunks, "PubMed")
+        await procesar_y_guardar(chunkear_articulos(articulos), "PubMed")
         
     elif args.fuente == "openfda":
         if not args.query:
             logger.error("Se requiere --query para la fuente 'openfda'")
             return
         info = await buscar_medicamento(args.query)
-        if "error" not in info:
-            chunks = [{"texto": f"Medicamento: {info['nombre']}\nIndicaciones: {info['indicaciones']}\nDosis: {info['dosis']}\nContraindicaciones: {info['contraindicaciones']}", "fuente": f"OpenFDA:{info['nombre']}", "metadata": info}]
-            await procesar_y_guardar(chunks, "OpenFDA")
-        else:
+        if "error" in info:
             logger.error(f"Error desde OpenFDA: {info['error']}")
+            return
+        await procesar_y_guardar(chunkear_medicamento(info), "OpenFDA")
 
 if __name__ == "__main__":
     asyncio.run(main())

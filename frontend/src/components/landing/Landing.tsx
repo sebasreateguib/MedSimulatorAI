@@ -1,6 +1,4 @@
-import { EstadoBackend } from '../EstadoBackend'
 import { Footer } from '../footer'
-import { Marca } from '../Marca'
 import { useRevelado } from '../../hooks/useRevelado'
 import { useCabecera } from '../../hooks/useCabecera'
 import { CursorSeguidor } from './CursorSeguidor'
@@ -144,14 +142,14 @@ export function Landing({ onEntrar }: Props) {
 
       <header className={clasesNav}>
         <div className="topbar__marca">
-          <Marca />
           <div>
-            <h2>MedSimulator&nbsp;AI</h2>
+            <h2>
+              <span className="logotipo" role="img" aria-label="MedSimulator AI" />
+            </h2>
             <p>Entrenamiento en razonamiento clínico</p>
           </div>
         </div>
         <div className="landing__nav-acciones">
-          <EstadoBackend />
           <button type="button" className="btn btn--primario" onClick={onEntrar}>
             Iniciar sesión
           </button>

@@ -21,6 +21,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { NavMain, type NavItem } from "@/components/shadcn-space/blocks/sidebar-01/nav-main";
+import { Marca } from "@/components/Marca";
 import { MetricasSidebar } from "@/components/MetricasSidebar";
 import { cn } from "@/lib/utils";
 import type { UsuarioPublico } from "@/types";
@@ -127,11 +128,9 @@ export function AppSidebar({
 function MarcaSidebar({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2.5 px-1 py-1", className)}>
-      {/* Cruz clínica invertida: sobre la placa oscura el cuadrado va claro. */}
-      <span className="relative block h-7 w-7 shrink-0 bg-sidebar-foreground">
-        <span className="absolute inset-y-[3px] inset-x-[9px] bg-sidebar" />
-        <span className="absolute inset-x-[3px] inset-y-[9px] bg-sidebar" />
-      </span>
+      {/* La misma marca que la landing, en su variante para fondo oscuro: acá
+          había una copia dibujada a mano con divs que se desincronizaba sola. */}
+      <Marca size={28} className="marca--luz" />
       <div className="leading-none">
         <p
           className="text-[15px] tracking-tight text-sidebar-foreground"

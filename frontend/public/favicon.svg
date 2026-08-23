@@ -1,11 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="MedSimulator AI">
   <title>MedSimulator AI</title>
+  <style>
+    /* En pestañas oscuras la lámina se funde con la barra: sube el filete. */
+    @media (prefers-color-scheme: dark) { .filete { stroke-opacity: .3 } }
+  </style>
   <!-- Lámina de tinta. -->
   <rect width="32" height="32" fill="#171310"/>
-  <!-- Cuadrante inferior derecho: el caso sin resolver. -->
-  <path d="M18.5 18.5H32V32H18.5z" fill="#A33224"/>
-  <!-- Cruz clínica, sangrada a los cuatro bordes. -->
-  <path d="M13.5 0h5v32h-5zM0 13.5h32v5H0z" fill="#F0EAE0"/>
-  <!-- Filete hueso: mantiene la lámina legible sobre pestañas oscuras. -->
-  <rect x=".5" y=".5" width="31" height="31" fill="none" stroke="#EDE5D7" stroke-opacity=".14"/>
+  <!-- Lomo de óxido: el canto teñido del volumen. -->
+  <rect width="2.6" height="32" fill="#DD7261"/>
+  <!-- Monograma. El bisel de las puntas superiores es decisión, no azar: sin
+       declarar el miterlimit caían justo en el umbral por defecto. -->
+  <path d="M9.4 25.1V6.3L17.3 22.3 25.2 6.3V25.1" fill="none" stroke="#F0EAE0"
+        stroke-width="3.6" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="3"/>
+  <!-- Filete: mantiene la lámina recortada contra la barra del navegador. -->
+  <rect class="filete" x=".5" y=".5" width="31" height="31" fill="none"
+        stroke="#EDE5D7" stroke-opacity=".16"/>
 </svg>

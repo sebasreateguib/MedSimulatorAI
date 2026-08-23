@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react'
-import { Marca } from './Marca'
 
 /**
  * Colofón de la lámina: el pie del landing.
@@ -92,8 +91,9 @@ export function Footer({
           y empareja el bloque con el índice de la lámina. */}
       <div className="colofon__cuerpo">
         <div className="colofon__titulo" data-revelar>
-          {/* Sin el nombre al lado, la marca pasa de dibujo a contenido. */}
-          <Marca size={40} titulo="MedSimulator AI" />
+          {/* El logotipo ya trae el nombre, así que es contenido y no dibujo:
+              va anunciado, no oculto al lector de pantalla. */}
+          <span className="logotipo" role="img" aria-label="MedSimulator AI" />
           <p className="colofon__bajada">{bajada}</p>
           <p className="colofon__aviso">{aviso}</p>
         </div>

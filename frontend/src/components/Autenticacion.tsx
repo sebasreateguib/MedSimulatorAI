@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Marca } from './Marca'
 
 interface Props {
   onEntrar: (email: string, password: string) => Promise<void>
@@ -73,8 +72,7 @@ export function Autenticacion({ onEntrar, onRegistrarse, onVolver }: Props) {
       {/* Lámina: el lado oscuro sostiene el relato; el formulario queda limpio sobre papel. */}
       <aside className="acceso__lamina">
         <div className="acceso__marca">
-          <Marca className="marca--luz" />
-          <span className="acceso__marca-texto">MedSimulator AI</span>
+          <span className="logotipo" role="img" aria-label="MedSimulator AI" />
         </div>
 
         <div className="acceso__discurso">

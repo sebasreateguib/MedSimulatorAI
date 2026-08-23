@@ -86,6 +86,9 @@ pnpm-debug.log*
 data/
 uploads/
 
+# Corpus documental (GPC en PDF). Se baja a mano, no se versiona.
+corpus/
+
 # ==========================================
 # Build & Temporary Files
 # ==========================================

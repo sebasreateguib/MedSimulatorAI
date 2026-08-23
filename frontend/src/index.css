@@ -196,24 +196,46 @@ button:disabled {
   gap: 14px;
 }
 
-/* Marca: lámina partida por la cruz clínica. El dibujo vive en Marca.tsx;
+/* Marca: lámina de tinta con una tira de ritmo. El dibujo vive en Marca.tsx;
    acá solo se define de qué color es cada pieza. */
 .marca {
   flex-shrink: 0;
   display: block;
   --marca-placa: var(--tinta);
-  --marca-cruz: var(--papel);
-  --marca-acento: var(--oxido);
+  --marca-trazo: var(--papel);
+  /* El complejo se dibuja siempre sobre la placa oscura, nunca sobre el papel,
+     así que el acento no cambia por contexto: va la versión luminosa en todos.
+     El óxido de papel sobre tinta queda en 2.7:1 y a este grosor se pierde. */
+  --marca-acento: var(--luz-oxido);
   /* Sobre papel la lámina ya recorta contra el fondo: el filete sobra. */
   --marca-filete: transparent;
 }
 
-/* Sobre placa la lámina se funde con el fondo: la define el filete, y los
-   acentos suben a sus versiones luminosas. */
+/* Sobre placa la lámina se funde con el fondo: la define el filete, y el trazo
+   sube a su versión luminosa. */
 .marca--luz {
-  --marca-cruz: var(--luz-hueso);
-  --marca-acento: var(--luz-oxido);
+  --marca-trazo: var(--luz-hueso);
   --marca-filete: var(--luz-linea);
+}
+
+/* ── Logotipo ─────────────────────────────────────────────────────────
+   El lockup horizontal —glifo más nombre— reemplaza a la marca en los dos
+   lugares donde hay ancho para que entre: la cabecera y el colofón. En el
+   resto del producto (acceso, sidebar, pestaña) sigue el monograma, que es
+   lo que aguanta en una caja chica.
+
+   Va como máscara y no como <img>: el archivo viene en hueso (#e2d5bf) y
+   sobre el papel da 1.21:1, o sea invisible. Enmascarado, el dibujo se pinta
+   con `currentColor` y hereda solo el mismo doble estado que ya tenía la
+   marca —tinta sobre papel, hueso sobre la lámina— sin dos archivos ni una
+   regla de color de más.
+   ------------------------------------------------------------------- */
+.logotipo {
+  display: block;
+  aspect-ratio: 830 / 175;
+  background-color: currentColor;
+  -webkit-mask: url('/logotipo.webp') no-repeat center / contain;
+  mask: url('/logotipo.webp') no-repeat center / contain;
 }
 
 .main {
@@ -1133,13 +1155,8 @@ button:disabled {
   gap: 12px;
 }
 
-.acceso__marca-texto {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--luz-hueso);
+.acceso__marca .logotipo {
+  width: clamp(150px, 15vw, 186px);
 }
 
 /* El discurso empuja las estaciones al pie y se queda con el aire del medio. */

@@ -175,17 +175,8 @@ html:has(.landing) {
 /* La cabecera se invierte al pasar sobre la lámina: la marca la sigue
    reasignando sus custom properties, sin cambiar el dibujo. */
 .landing__nav--placa .marca {
-  --marca-cruz: var(--luz-hueso);
-  --marca-acento: var(--luz-oxido);
+  --marca-trazo: var(--luz-hueso);
   --marca-filete: var(--luz-linea);
-}
-
-.landing__nav--placa .estado--caido .estado__punto {
-  background: var(--oxido-claro);
-}
-
-.landing__nav--placa .estado {
-  color: rgb(237 229 215 / 0.62);
 }
 
 .landing__nav--placa .btn.btn--primario {
@@ -201,13 +192,12 @@ html:has(.landing) {
   box-shadow: 4px 4px 0 rgb(237 229 215 / 0.28);
 }
 
+/* El h2 es la caja del logotipo: el nombre lo dibuja la máscara, así que acá
+   solo queda el rol semántico. El color lo sigue tomando de la cabecera —y de
+   .landing__nav--placa cuando se invierte— porque la máscara usa currentColor. */
 .landing__nav h2 {
   margin: 0;
-  font-family: var(--serif-display);
-  font-size: 23px;
-  font-weight: 400;
-  letter-spacing: -0.015em;
-  line-height: 1;
+  line-height: 0;
 }
 
 .landing__nav p {
@@ -225,11 +215,37 @@ html:has(.landing) {
   gap: 16px;
 }
 
+/* Anchos del logotipo por contexto. La regla base vive en index.css: la usan
+   también la lámina de acceso y cualquier superficie fuera de esta página. */
+.landing__nav .logotipo {
+  width: clamp(126px, 13vw, 154px);
+}
+
+.colofon .logotipo {
+  width: 174px;
+}
+
 /* ── Hero / lámina a pantalla completa ────────────────────────────── */
 .hero {
   padding: 0;
 }
 
+/* ── La lámina: cartela a la izquierda, ventana a la derecha ──────────
+   El metraje no tiene una sola zona oscura donde apoyar un titular: medido
+   sobre ocho fotogramas, la franja del medio —justo donde caía el texto—
+   promedia 86-100 de luminancia con picos de 185. Ningún degradado salva eso.
+
+   Así que el texto deja de flotar sobre la foto y recibe su propia
+   superficie, que es como resuelve esto una lámina impresa: la cartela con
+   el pie de figura a un lado, la ventana con la imagen al otro. El video
+   sigue corriendo a sangre por detrás de todo —bajo la cartela se lo ve
+   fantasmear— pero donde hay tipografía hay tinta.
+
+   La lámina es una grilla de dos columnas y dos filas: cartela y ventana
+   arriba, constantes cruzando abajo. Así el conjunto mide exactamente un
+   viewport y las constantes son el pie de la lámina, no un bloque suelto
+   que se le monta encima al borde.
+   ------------------------------------------------------------------- */
 .placa {
   position: relative;
   isolation: isolate;
@@ -237,62 +253,96 @@ html:has(.landing) {
   background: var(--placa);
   color: var(--placa-texto);
   border: none;
-  /* El tope deja pasar la cabecera bajada, que llega hasta ~120px. */
-  padding: clamp(136px, 16vh, 184px) clamp(26px, 6vw, 84px) clamp(96px, 12vh, 132px);
   min-height: 100vh;
   /* svh evita el salto por la barra de herramientas en móvil. */
   min-height: 100svh;
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .placa__lienzo {
   position: absolute;
   inset: 0;
   z-index: -2;
-  /* Grabado de respaldo si el canvas WebGL no monta. */
+  /* Grabado de respaldo si el video no carga. */
   background:
     radial-gradient(58% 46% at 50% 52%, rgb(196 82 63 / 0.2), transparent 72%),
     radial-gradient(40% 38% at 76% 40%, rgb(166 112 42 / 0.16), transparent 74%);
 }
 
-.placa__strands {
+/* El recorte al 70% deja al sujeto centrado en la ventana, no partido por el
+   canto de la cartela. El grado baja saturación y brillo para que el clip
+   entre en la paleta de la lámina en vez de pelearse con ella. */
+.placa__video {
   position: absolute;
-  inset: -5%;
-  width: 110%;
-  height: 110%;
-  filter: blur(6px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% 50%;
+  filter: saturate(0.82) brightness(0.88) contrast(1.05);
 }
 
-/* Viñeta: hunde los bordes para que el texto gane siempre. */
+/* Con la cartela sosteniendo el texto, el velo ya no tiene que tapar media
+   pantalla: alcanza con bajarle un punto al conjunto y apagar el pie, para
+   que la banda de constantes nazca de tinta y no de una imagen. */
+.placa__velo {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, var(--placa) 0%, transparent 24%),
+    linear-gradient(180deg, rgb(20 18 15 / 0.5) 0%, transparent 22%),
+    rgb(20 18 15 / 0.16);
+}
+
+/* Viñeta: hunde los bordes de la ventana. Ya sin la rampa lateral, que ahora
+   la resuelve el canto de la cartela. */
 .placa::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    linear-gradient(100deg, var(--placa) 12%, rgb(20 18 15 / 0.55) 46%, transparent 76%),
-    radial-gradient(120% 90% at 50% 50%, transparent 42%, rgb(20 18 15 / 0.72) 100%);
+  background: radial-gradient(115% 88% at 62% 46%, transparent 40%, rgb(20 18 15 / 0.66) 100%);
 }
 
-.placa__contenido {
+/* ── Cartela ─────────────────────────────────────────────────────────
+   Casi opaca, no del todo: el 7% que deja pasar es lo que hace que se lea
+   como una lámina apoyada sobre el metraje y no como una caja negra. El
+   desenfoque disuelve los paneles del HUD, que si no se adivinan detrás de
+   la tipografía como manchas. */
+.placa__cartela {
+  grid-column: 1;
+  grid-row: 1;
   position: relative;
   z-index: 3;
-  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* El tope deja pasar la cabecera bajada, que llega hasta ~120px. */
+  padding: clamp(132px, 15vh, 178px) clamp(30px, 3.2vw, 52px) clamp(64px, 8vh, 96px)
+    clamp(26px, 6vw, 84px);
+  background: rgb(20 18 15 / 0.93);
+  -webkit-backdrop-filter: blur(14px) saturate(0.9);
+  backdrop-filter: blur(14px) saturate(0.9);
+  border-right: 1px solid rgb(237 229 215 / 0.26);
 }
 
 .placa__rotulo {
   margin: 0 0 clamp(20px, 3vw, 34px);
   padding-bottom: 12px;
-  border-bottom: 1px solid rgb(237 229 215 / 0.22);
+  border-bottom: 1px solid var(--oxido-claro);
   font-family: var(--mono);
   font-size: 10.5px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: rgb(237 229 215 / 0.62);
-  max-width: 30ch;
+  /* 30ch lo partía en cuatro líneas dentadas. Sin tope entra en una sola en
+     pantallas anchas y en dos parejas cuando la columna se angosta. */
+  max-width: 46ch;
+  text-wrap: balance;
   animation: surgir 0.8s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
@@ -300,8 +350,10 @@ html:has(.landing) {
   margin: 0 0 clamp(22px, 3vw, 32px);
   font-family: var(--serif-display);
   font-weight: 400;
-  font-size: clamp(46px, 8.4vw, 108px);
-  line-height: 0.94;
+  /* Medido contra el ancho útil de la cartela: a 8.4vw el titular se salía
+     de la columna y terminaba pisando al sujeto. */
+  font-size: clamp(38px, 5.2vw, 88px);
+  line-height: 0.96;
   letter-spacing: -0.035em;
 }
 
@@ -352,20 +404,6 @@ html:has(.landing) {
   animation: surgir 0.85s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
-/* Se mantiene por encima del solape de .constantes. */
-.placa__pie {
-  position: absolute;
-  left: clamp(26px, 6vw, 84px);
-  bottom: clamp(48px, 4.5vw, 62px);
-  margin: 0;
-  z-index: 3;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: rgb(237 229 215 / 0.34);
-}
-
 /* Botones sobre la placa oscura.
    Doble clase a propósito: gana a .btn sin depender del orden de los archivos. */
 .btn.btn--luz {
@@ -412,26 +450,41 @@ html:has(.landing) {
 }
 
 /* ── Constantes al ingreso: rompen el borde inferior de la lámina ─── */
+/* ── Constantes: el pie de la lámina ──────────────────────────────────
+   Antes eran una losa de papel que se le montaba al borde inferior de la
+   lámina con un margen negativo. Ahora son la fila de abajo de la grilla:
+   cruzan las dos columnas, van sobre tinta y cierran la placa. La lámina
+   pasa a ser una sola pieza que mide un viewport exacto.
+   ------------------------------------------------------------------- */
 .constantes {
+  grid-column: 1 / -1;
+  grid-row: 2;
   position: relative;
-  z-index: 10;
-  margin: -34px clamp(20px, 4vw, 44px) 0;
-  border: 1px solid var(--tinta);
-  background: var(--papel);
+  z-index: 3;
+  margin: 0;
+  border: none;
+  border-top: 1px solid rgb(237 229 215 / 0.2);
+  background: rgb(20 18 15 / 0.94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .constantes__fila {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
-  background: var(--papel);
+  background: transparent;
 }
 
-/* El borde derecho lo pone cada celda; el último se recorta contra el marco. */
+/* El filete lo pone cada celda; el último se recorta contra el borde. */
 .constante {
-  padding: 17px 20px 15px;
-  border-right: 1px solid var(--linea-fuerte);
+  padding: 15px clamp(18px, 2vw, 26px) 14px;
+  border-right: 1px solid rgb(237 229 215 / 0.13);
   margin-right: -1px;
+}
+
+.constante:first-child {
+  padding-left: clamp(26px, 6vw, 84px);
 }
 
 .constante dt {
@@ -439,11 +492,11 @@ html:has(.landing) {
   font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: var(--tinta-tenue);
+  color: rgb(237 229 215 / 0.5);
 }
 
 .constante dd {
-  margin: 7px 0 0;
+  margin: 6px 0 0;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
@@ -452,18 +505,20 @@ html:has(.landing) {
 
 .constante__valor {
   font-family: var(--serif-display);
-  font-size: 34px;
+  font-size: 31px;
   line-height: 0.9;
   letter-spacing: -0.03em;
+  color: var(--placa-texto);
 }
 
 .constante__unidad {
   font-family: var(--mono);
   font-size: 11px;
-  color: var(--tinta-tenue);
+  color: rgb(237 229 215 / 0.5);
 }
 
-/* Marca de valor fuera de rango, como en una planilla de guardia. */
+/* Marca de valor fuera de rango, como en una planilla de guardia. Sobre
+   tinta los acentos suben a sus versiones luminosas o no se leen. */
 .constante__nota {
   margin-left: auto;
   align-self: center;
@@ -471,26 +526,26 @@ html:has(.landing) {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.13em;
-  color: var(--verde);
+  color: var(--luz-verde);
   border: 1px solid currentColor;
   padding: 2px 6px;
 }
 
 .constante__nota--alterado {
-  color: var(--oxido);
-  background: rgb(163 50 36 / 0.07);
+  color: var(--luz-oxido);
+  background: rgb(221 114 97 / 0.1);
 }
 
 .constantes__pie {
   margin: 0;
-  padding: 9px 20px;
-  border-top: 1px solid var(--linea-fuerte);
-  background: var(--papel-hueso);
+  padding: 8px clamp(26px, 6vw, 84px);
+  border-top: 1px solid rgb(237 229 215 / 0.13);
+  background: rgb(237 229 215 / 0.03);
   font-family: var(--mono);
   font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: var(--tinta-tenue);
+  color: rgb(237 229 215 / 0.42);
 }
 
 /* ── Cuerpo editorial ─────────────────────────────────────────────── */
@@ -1351,6 +1406,117 @@ html:has(.landing) {
 }
 
 /* ── Responsive ───────────────────────────────────────────────────── */
+/* ── La lámina en retrato ─────────────────────────────────────────────
+   La partición no se pierde: gira noventa grados. La ventana pasa arriba y
+   la cartela abajo.
+   ------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .placa {
+    /* Una sola medida para la fila y para el alto del metraje: si se separan,
+       el video se sale de la ventana o le deja una franja muerta. */
+    --ventana: clamp(268px, 36vh, 344px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--ventana) auto auto;
+  }
+
+  /* El metraje se acota a la ventana en vez de correr detrás de toda la
+     lámina. A la altura completa, `cover` en retrato amplía tanto que la
+     ventana solo alcanza a mostrar el 28% de arriba del cuadro —el techo, no
+     el sujeto—. En una caja de 390×304 el recorte vuelve a ser casi 16:9 y
+     entra la escena entera: los paneles del HUD y el clínico con los lentes. */
+  .placa__lienzo {
+    inset: 0 0 auto;
+    height: var(--ventana);
+  }
+
+  .placa__video {
+    object-position: 50% 50%;
+  }
+
+  /* Abajo el metraje se funde con la cartela; arriba, apenas lo necesario
+     para que la cabecera flotante se despegue. */
+  .placa__velo {
+    background:
+      linear-gradient(0deg, var(--placa) 0%, transparent 34%),
+      linear-gradient(180deg, rgb(20 18 15 / 0.58) 0%, transparent 42%);
+  }
+
+  .placa__cartela {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    /* El relleno superior de escritorio existe para dejar pasar la cabecera.
+       Acá la cabecera queda sobre la ventana, así que sobra. */
+    padding: clamp(26px, 4vh, 38px) clamp(26px, 6vw, 84px) clamp(36px, 5vh, 56px);
+    /* Sin metraje detrás no hay nada que desenfocar: el desenfoque sería GPU
+       tirada a la basura y el fondo lo pone la lámina. */
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-right: none;
+    border-top: 1px solid rgb(237 229 215 / 0.16);
+  }
+
+  .constantes {
+    grid-row: 3;
+  }
+
+  /* A dos columnas el relleno de página solo le toca a la columna izquierda:
+     así el 135 y el 1.6 caen sobre el mismo eje que el titular. Con
+     :first-child, la celda de abajo a la izquierda quedaba desalineada. */
+  .constante:first-child {
+    padding-left: clamp(18px, 2vw, 26px);
+  }
+
+  .constante:nth-child(2n + 1) {
+    padding-left: clamp(26px, 6vw, 84px);
+  }
+}
+
+/* ── Retrato angosto: la cabecera y los botones dejan de dentarse ────── */
+@media (max-width: 640px) {
+  /* Sin nowrap las acciones se iban a un segundo renglón y la pastilla
+     crecía a tres bloques apilados. La bajada es lo que no entra: el
+     logotipo ya dice el nombre. */
+  .landing__nav {
+    flex-wrap: nowrap;
+    gap: 12px;
+    padding: 8px 10px 8px 16px;
+  }
+
+  .landing__nav p {
+    display: none;
+  }
+
+  .landing__nav .logotipo {
+    width: clamp(102px, 30vw, 132px);
+  }
+
+  .landing__nav .btn {
+    padding: 9px 13px;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .placa__rotulo {
+    font-size: 9.5px;
+    letter-spacing: 0.15em;
+  }
+
+  /* Uno debajo del otro y del mismo ancho. Con flex-wrap cada botón medía lo
+     que medía su texto y la columna quedaba dentada. */
+  .hero__acciones {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .hero__acciones .btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
 @media (max-width: 860px) {
   .seccion__cabecera,
   .paso {
@@ -1370,10 +1536,6 @@ html:has(.landing) {
 
   .paso__margen {
     justify-self: start;
-  }
-
-  .constantes {
-    margin-top: -22px;
   }
 
   .landing__nav--tope {

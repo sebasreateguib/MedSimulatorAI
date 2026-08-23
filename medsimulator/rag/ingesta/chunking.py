@@ -31,6 +31,20 @@ class ChunkerClinico:
         )
         logger.info(f"Inicializando ChunkerClinico (tamaño: {tamano_chunk}, superposición: {superposicion})")
 
+    def partir_texto(self, texto: str) -> List[str]:
+        """
+        Parte un texto suelto con la misma política que el resto del corpus.
+
+        Las fuentes que no son PDF —una sección de etiqueta de openFDA, por
+        ejemplo— no tienen páginas ni tablas que preservar, pero sí tienen que
+        respetar el mismo tamaño de chunk: si una fuente emite bloques de 17k
+        caracteres y otra de 1k, el reranker compara peras con manzanas y el
+        bloque grande gana por acumulación de términos, no por pertinencia.
+        """
+        if not texto or not texto.strip():
+            return []
+        return self._splitter.split_text(texto.strip())
+
     def chunkear(self, documento: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Divide un documento en chunks preservando el contexto clínico.

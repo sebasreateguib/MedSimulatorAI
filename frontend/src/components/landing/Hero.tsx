@@ -1,25 +1,10 @@
-import { useEffect, useState } from 'react'
-import { useEsAngosto } from '../../hooks/useEsAngosto'
-import Strands from '../wave'
+import { useEffect, useRef, useState } from 'react'
 
-/**
- * Paleta de la lámina: hueso, óxido, ámbar, verde clínico.
- * Los strands son luz aditiva — solo leen bien sobre la placa oscura.
- */
-const PALETA = ['#EDE5D7', '#C4523F', '#A6702A', '#4A6B56']
+const VIDEO = '/hero-video2.mp4'
+/** Primer fotograma del clip: tapa la descarga y es el fondo fijo en angosto. */
+const POSTER = '/hero-poster.webp'
 
-/**
- * El shader normaliza las coordenadas por la ALTURA del lienzo, así que en una
- * pantalla angosta `uv.x` apenas llega a ±0.23 y la envolvente
- * `cos(uv.x · π · 1.3)` —que recién se cierra en |uv.x| ≥ 0.385— nunca toca
- * cero: la onda sale cortada por los dos costados.
- *
- * Bajar `scale` divide menos las coordenadas y hace que el ahusado entre en
- * pantalla. 0.6 es el techo que sale de esa cuenta (0.231 / 0.385); la
- * amplitud sube para compensar la figura más chica.
- */
-const ONDA_ANCHA = { scale: 1.3, amplitude: 1.2, thickness: 0.62, count: 5 }
-const ONDA_ANGOSTA = { scale: 0.58, amplitude: 1.5, thickness: 0.74, count: 4 }
+const MOVIMIENTO_REDUCIDO = '(prefers-reduced-motion: reduce)'
 
 /**
  * Constantes al ingreso del caso I (config/casos/fa_aguda.yaml).
@@ -33,59 +18,74 @@ const CONSTANTES = [
   { rotulo: 'Troponinas', valor: 'Neg.', unidad: '', nota: 'Sin necrosis', alterado: false },
 ]
 
-/** Sin contexto WebGL no tiene sentido montar el canvas: queda el grabado estático. */
-function soportaWebGL(): boolean {
-  try {
-    const canvas = document.createElement('canvas')
-    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))
-  } catch {
-    return false
-  }
-}
-
 interface Props {
   onEntrar: () => void
 }
 
 export function Hero({ onEntrar }: Props) {
-  const [animar, setAnimar] = useState(false)
-  const angosto = useEsAngosto()
-  const onda = angosto ? ONDA_ANGOSTA : ONDA_ANCHA
+  // Lazy y no `false`: arrancando en false el video se monta un frame y recién
+  // el efecto lo apaga. Con movimiento reducido eso es justo lo que no se pide,
+  // y además dispara la descarga del clip antes de desmontarlo.
+  const [quieto, setQuieto] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOVIMIENTO_REDUCIDO).matches,
+  )
+  const videoRef = useRef<HTMLVideoElement>(null)
 
-  // El hero es un canvas WebGL en loop: si el sistema pide menos movimiento,
-  // no lo montamos y queda el grabado estático de respaldo.
+  /**
+   * El video se monta en todos los anchos; lo único que lo apaga es que el
+   * sistema pida menos movimiento, y ahí queda el póster.
+   *
+   * En móvil no se montaba por dos razones que ya no valen: pesaba 9 MB (hoy
+   * 2.77 y con el moov al frente, así que arranca sin bajar el archivo entero)
+   * y el recorte 16:9 en vertical dejaba una faja sin sujeto (lo resuelve el
+   * `object-position: 55%` del breakpoint).
+   */
+  const montarVideo = !quieto
+
   useEffect(() => {
-    const hayWebGL = soportaWebGL()
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const aplicar = () => setAnimar(hayWebGL && !mq.matches)
+    const mq = window.matchMedia(MOVIMIENTO_REDUCIDO)
+    const aplicar = () => setQuieto(mq.matches)
     aplicar()
     mq.addEventListener('change', aplicar)
     return () => mq.removeEventListener('change', aplicar)
   }, [])
 
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    // React escribe `muted` como propiedad y hay motores que evalúan la
+    // política de autoplay antes de que llegue: sin forzarlo acá el clip se
+    // queda clavado en el primer fotograma. Si igual lo bloquean, la promesa
+    // rechaza y queda el póster, que es exactamente ese mismo fotograma.
+    video.muted = true
+    video.play().catch(() => {})
+  }, [montarVideo])
+
   return (
     <section className="hero">
       <div className="placa">
         <div className="placa__lienzo" aria-hidden="true">
-          {animar && (
-            <Strands
-              className="placa__strands"
-              colors={PALETA}
-              count={onda.count}
-              speed={0.32}
-              amplitude={onda.amplitude}
-              waviness={1.05}
-              thickness={onda.thickness}
-              glow={2.5}
-              taper={2.4}
-              intensity={0.72}
-              saturation={1.25}
-              scale={onda.scale}
+          {montarVideo ? (
+            <video
+              ref={videoRef}
+              className="placa__video"
+              src={VIDEO}
+              poster={POSTER}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
             />
+          ) : (
+            <img className="placa__video" src={POSTER} alt="" decoding="async" />
           )}
+          {/* Velo: con la cartela sosteniendo el texto ya no tiene que tapar
+              media pantalla. Solo baja un punto el conjunto y apaga el pie. */}
+          <div className="placa__velo" />
         </div>
 
-        <div className="placa__contenido">
+        <div className="placa__cartela">
           <p className="placa__rotulo" style={{ animationDelay: '0.05s' }}>
             Simulador Clínico IA · Razonamiento diagnóstico en tiempo real
           </p>
@@ -118,27 +118,29 @@ export function Hero({ onEntrar }: Props) {
           </div>
         </div>
 
-      </div>
-
-      {/* Constantes al ingreso: rompe el borde de la lámina y cae sobre el papel. */}
-      <div className="constantes">
-        <dl className="constantes__fila">
-          {CONSTANTES.map((c) => (
-            <div key={c.rotulo} className="constante">
-              <dt>{c.rotulo}</dt>
-              <dd>
-                <span className="constante__valor">{c.valor}</span>
-                {c.unidad && <span className="constante__unidad">{c.unidad}</span>}
-                <span className={`constante__nota${c.alterado ? ' constante__nota--alterado' : ''}`}>
-                  {c.nota}
-                </span>
-              </dd>
-            </div>
-          ))}
-        </dl>
-        <p className="constantes__pie">
-          Caso I · constantes al ingreso — el diagnóstico no se muestra, se construye
-        </p>
+        {/* Constantes al ingreso: la fila de abajo de la lámina. Antes se le
+            montaba al borde con un margen negativo; ahora es su pie. */}
+        <div className="constantes">
+          <dl className="constantes__fila">
+            {CONSTANTES.map((c) => (
+              <div key={c.rotulo} className="constante">
+                <dt>{c.rotulo}</dt>
+                <dd>
+                  <span className="constante__valor">{c.valor}</span>
+                  {c.unidad && <span className="constante__unidad">{c.unidad}</span>}
+                  <span
+                    className={`constante__nota${c.alterado ? ' constante__nota--alterado' : ''}`}
+                  >
+                    {c.nota}
+                  </span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="constantes__pie">
+            Caso I · constantes al ingreso — el diagnóstico no se muestra, se construye
+          </p>
+        </div>
       </div>
     </section>
   )
