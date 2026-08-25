@@ -182,20 +182,31 @@ FlagEmbedding      + BAAI/bge-reranker-v2-m3   # reranking
 
 ```yaml
 # config/agents.yaml
-paciente:    {provider: groq,       model: llama-3.3-70b-versatile, temperature: 0.8}
-router:      {provider: groq,       model: llama-3.1-8b-instant,    temperature: 0.0}
-tutor:       {provider: anthropic,  model: claude-opus-5, effort: high}
-validador:   {provider: anthropic,  model: claude-opus-5, citations: true}
-especialista:{provider: openrouter, model: deepseek/deepseek-chat}
+paciente:    {provider: groq,       model: openai/gpt-oss-120b,     temperature: 0.8}
+router:      {provider: groq,       model: openai/gpt-oss-20b,      temperature: 0.0}
+tutor:       {provider: anthropic,  model: claude-opus-5, max_tokens: 2000, effort: high}
+validador:   {provider: groq,       model: openai/gpt-oss-120b,     temperature: 0.0}
+especialista: {provider: openrouter, model: deepseek/deepseek-chat}
+estudio:     {provider: groq,       model: openai/gpt-oss-120b,     temperature: 0.3}
+flashcards:  {provider: groq,       model: openai/gpt-oss-120b,     temperature: 0.4}
+vision:      {provider: openrouter, model: google/gemini-2.5-flash-lite, max_tokens: 1200}
 ```
 
-| Agente | Proveedor | Porqué |
+Ese bloque es el archivo real, no el ideal. Dos agentes están hoy sobre un
+proveedor distinto al que les corresponde por criterio, y el archivo lo dice en
+sus comentarios: el **validador** debería correr con `citations` de Anthropic y
+corre sobre Groq con verificación casera. La columna "Porqué" de abajo describe
+el criterio; la columna "Hoy" describe dónde está parado.
+
+| Agente | Hoy | Porqué |
 |---|---|---|
-| **Paciente** | Groq | Es el agente que más turnos genera y el único donde la latencia es parte de la experiencia. Groq entrega cientos de tokens/s. Barato y rápido gana sobre inteligente y lento aquí. |
-| **Router** | Groq (8B) | Clasificación trivial de intención. Milisegundos, costo casi nulo. |
-| **Validador RAG** | Anthropic | Es el punto donde una alucinación es **peligrosa**. Aquí no se escatima, y aquí es donde `citations` no tiene sustituto real. |
-| **Tutor** | Anthropic | Razonamiento clínico + rúbrica estructurada. Corre async, la latencia no importa. |
+| **Paciente** | Groq (120B) | Es el agente que más turnos genera y el único donde la latencia es parte de la experiencia. Groq entrega cientos de tokens/s. Barato y rápido gana sobre inteligente y lento aquí. |
+| **Router** | Groq (20B) | Clasificación trivial de intención. Milisegundos, costo casi nulo. |
+| **Validador RAG** | Groq (120B) — *el destino es Anthropic* | Es el punto donde una alucinación es **peligrosa**, y donde `citations` no tiene sustituto real. Corre sobre Groq con el validador casero hasta que la key esté cargada; el flip está documentado en `agents.yaml`. |
+| **Tutor** | Anthropic | Razonamiento clínico + rúbrica estructurada. Corre async, la latencia no importa, y es la única llamada por sesión: acá no se escatima. |
 | **Especialista** | OpenRouter | Razonamiento sobre hallazgos ya descritos en texto. Un modelo intermedio basta. |
+| **Estudio / Flashcards** | Groq (120B) | Trabajan sobre material que el usuario ya subió y verificó. El costo por documento importa más que el último punto de calidad. |
+| **Visión** | OpenRouter | Único agente multimodal: describe las imágenes que el OCR no puede leer. Un modelo chico y barato alcanza para eso. |
 
 ### Porqué multi-proveedor y no uno solo
 
@@ -219,6 +230,39 @@ PROVIDERS = {
 ```
 
 Cambiar de modelo o proveedor es editar una línea del YAML.
+
+### Un agente, dos formas de llamada
+
+Cambiar el proveedor no es solo cambiar a quién se le factura: las dos APIs
+tienen firmas distintas. `AsyncAnthropic` no tiene `.chat.completions`, y
+`AsyncOpenAI` no tiene `.messages.parse`. Un agente que quiera poder moverse
+entre proveedores tiene que bifurcar por dentro — `agents/tutor.py` es el caso
+completo, y `agents/vision.py` el mismo patrón en versión corta:
+
+```python
+if self.proveedor == "anthropic":
+    return await self._evaluar_anthropic(...)   # messages.parse + output_format
+return await self._evaluar_openai(...)          # chat.completions + response_format
+```
+
+Lo que cambia entre las dos ramas no es solo la firma:
+
+| | Ruta nativa (Anthropic) | Ruta compatible (Groq / OpenRouter) |
+|---|---|---|
+| Schema | `output_format=EvaluacionClinica`, garantizado por el protocolo | embebido en el prompt, y a confiar |
+| Respuesta | `parsed_output`, ya validada contra Pydantic | `json.loads` + construcción a mano |
+| Corte por límite | `stop_reason == "max_tokens"` | `finish_reason == "length"` |
+| Profundidad | `effort` | `temperature` |
+
+Dos detalles que no se ven en la tabla. El primero: **el prompt no es el mismo**.
+En la ruta nativa el schema viaja como parámetro de la request, así que
+repetirlo en el system prompt sería pagar dos veces por la misma información —
+1.072 caracteres contra 2.257. El segundo: `temperature` viaja **solo** por la
+ruta compatible, porque Opus 5 la eliminó y devuelve 400 si se la manda.
+
+El costo de mantener las dos ramas se paga una vez y compra la propiedad que
+hace útil al `agents.yaml`: volver el tutor a Groq para una tanda de pruebas
+end-to-end sigue siendo editar una línea, no tocar código.
 
 ---
 
@@ -291,16 +335,33 @@ Para el scorecard del tutor: JSON validado, sin parsear texto libre.
 
 ```python
 class EvaluacionClinica(BaseModel):
-    puntaje_total: int
-    razonamiento_diagnostico: int
-    costo_efectividad: int
+    puntaje_total: int = Field(..., ge=0, le=100)
+    razonamiento_diagnostico: str
+    costo_efectividad: str
     pruebas_innecesarias: list[str]
     errores_criticos: list[str]
     retroalimentacion: str
 
-resp = client.messages.parse(..., output_format=EvaluacionClinica)
-evaluacion = resp.parsed_output   # instancia validada
+resp = await client.messages.parse(
+    model="claude-opus-5",
+    system=prompt,                  # sin el schema adentro: ya viaja en la request
+    messages=[...],
+    output_format=EvaluacionClinica,
+    output_config={"effort": "high"},
+)
+evaluacion = resp.parsed_output     # instancia validada
 ```
+
+Lo que esto **borra** del código son las tres ramas de error que la ruta
+compatible todavía necesita: respuesta vacía, JSON no parseable y campos
+faltantes. El SDK además pliega los constraints de Pydantic (`ge=0, le=100`) en
+la descripción del campo, así que el schema estricto que viaja no lleva
+keywords que la API pueda rechazar.
+
+Lo único que queda por chequear a mano es el corte por límite: un
+`stop_reason == "max_tokens"` deja el scorecard incompleto y, sin ese chequeo,
+el fallo se leería como un schema inválido en vez de como un `max_tokens` corto
+para el largo del historial.
 
 ### El validador se implementa dos veces, a propósito
 
@@ -497,9 +558,10 @@ uv pip install -r requirements.txt
 
 # Variables de entorno
 cp .env.example .env
-#   GROQ_API_KEY=
-#   OPENROUTER_API_KEY=
-#   ANTHROPIC_API_KEY=
+#   GROQ_API_KEY=          → paciente, router, validador, estudio, flashcards
+#   OPENROUTER_API_KEY=    → especialista, visión
+#   ANTHROPIC_API_KEY=     → tutor. Sin esta, la evaluación final de cada
+#                            sesión falla (ver `config/agents.yaml`)
 #   DATABASE_URL=
 #   LANGFUSE_PUBLIC_KEY= / LANGFUSE_SECRET_KEY=
 

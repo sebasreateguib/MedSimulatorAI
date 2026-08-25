@@ -1,8 +1,14 @@
 paciente:    {provider: groq,       model: openai/gpt-oss-120b,     temperature: 0.8}
 router:      {provider: groq,       model: openai/gpt-oss-20b,      temperature: 0.0}
-# El tutor sigue corriendo sobre Opus, pero facturado por OpenRouter: es la
-# única key que el proyecto tiene cargada.
-tutor:       {provider: openrouter, model: anthropic/claude-opus-5, temperature: 0.0, max_tokens: 2000}
+# El tutor corre sobre Opus contra la API nativa de Anthropic. Eso le da
+# structured outputs —el scorecard llega validado contra EvaluacionClinica, sin
+# pedir el schema por prompt ni parsear a mano— y saca el fee de OpenRouter.
+# `temperature` no va: Opus 5 la eliminó y devuelve 400 si se la manda; el
+# equivalente es `effort`, que regula cuánto razona antes de puntuar.
+# Requiere ANTHROPIC_API_KEY cargada. Para volver a OpenRouter basta con
+# `{provider: openrouter, model: anthropic/claude-opus-5, temperature: 0.0}`:
+# el agente bifurca solo y la ruta compatible con OpenAI sigue intacta.
+tutor:       {provider: anthropic, model: claude-opus-5, max_tokens: 2000, effort: high}
 # Las citations nativas solo existen en la API de Anthropic, y ANTHROPIC_API_KEY
 # está vacía: con `provider: anthropic` el validador arranca y falla en cada
 # llamada. Corre entonces sobre Groq con verificación casera —el modelo cita y
