@@ -4,7 +4,7 @@ Módulo de búsqueda híbrida que combina BM25 (léxica), pgvector (semántica) 
 
 import json
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
 from rank_bm25 import BM25Okapi
 from sqlalchemy import select
 
@@ -81,14 +81,35 @@ class BuscadorHibrido:
             self._reranker = CrossEncoder("BAAI/bge-reranker-v2-m3")
         return self._reranker
 
-    async def buscar(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        logger.info(f"Ejecutando búsqueda híbrida para: '{query}' (top_k={top_k})")
+    async def buscar(
+        self, query: str, top_k: int = 5, caso_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Recupera los `top_k` fragmentos más pertinentes.
+
+        Con `caso_id` la búsqueda se acota a los chunks etiquetados para ese
+        caso. Es un filtro en el WHERE y no un reordenamiento posterior: si se
+        filtrara después del rerank, los cuatro lugares ya estarían ocupados por
+        material de otro caso y el filtro devolvería una lista corta o vacía.
+
+        Si el caso no tiene ningún chunk etiquetado —corpus viejo sin migrar, o
+        un caso para el que nadie ingirió nada— se repite la búsqueda sobre el
+        corpus entero. Es la misma decisión que toma el resto del circuito: vale
+        más una cita de un dominio vecino que ninguna cita.
+        """
+        logger.info(f"Ejecutando búsqueda híbrida para: '{query}' (top_k={top_k}, caso={caso_id or 'todos'})")
         
         # 1. Generar embedding de la query
         query_embedding = self.embedding_service.generar_embedding_query(query)
         
         # 2. Búsqueda semántica (top_k amplio para recall)
-        semantic_results = await self._busqueda_semantica(query_embedding, top_k=top_k*4)
+        semantic_results = await self._busqueda_semantica(query_embedding, top_k=top_k*4, caso_id=caso_id)
+
+        if caso_id and not semantic_results:
+            logger.warning(
+                "El caso '%s' no tiene chunks etiquetados; se busca sobre todo el corpus.", caso_id
+            )
+            semantic_results = await self._busqueda_semantica(query_embedding, top_k=top_k*4)
         
         # 3. Búsqueda léxica (BM25) sobre el mismo corpus o uno general
         # Para RRF, idealmente evaluamos todos los chunks candidatos
@@ -102,12 +123,18 @@ class BuscadorHibrido:
         
         return resultados_finales
 
-    async def _busqueda_semantica(self, query_embedding: List[float], top_k: int) -> List[Dict[str, Any]]:
+    async def _busqueda_semantica(
+        self, query_embedding: List[float], top_k: int, caso_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Búsqueda vectorial en la BD usando pgvector."""
         # La distancia se pide como columna y no solo en el ORDER BY: así el
         # score que se propaga al RRF es el real y no un 1.0 fijo para todos.
         distancia = Chunk.embedding.cosine_distance(query_embedding).label("distancia")
-        stmt = select(Chunk, distancia).order_by(distancia).limit(top_k)
+        stmt = select(Chunk, distancia)
+        if caso_id:
+            # `any_` sobre el ARRAY se resuelve con el índice GIN de `casos`.
+            stmt = stmt.where(Chunk.casos.any(caso_id))
+        stmt = stmt.order_by(distancia).limit(top_k)
 
         resultados = []
         async with self.session_factory() as session:

@@ -83,16 +83,18 @@ class AgenteValidador:
             self._buscador = BuscadorHibrido(async_session_factory, EmbeddingService())
         return self._buscador
 
-    async def _recuperar(self, consulta: str) -> List[Dict[str, Any]]:
+    async def _recuperar(self, consulta: str, caso_id: Optional[str] = None) -> List[Dict[str, Any]]:
         try:
-            return await self._obtener_buscador().buscar(consulta, top_k=FRAGMENTOS_POR_CONSULTA)
+            return await self._obtener_buscador().buscar(
+                consulta, top_k=FRAGMENTOS_POR_CONSULTA, caso_id=caso_id
+            )
         except Exception as e:
             logger.error("No se pudo consultar el corpus: %s", e, exc_info=True)
             return []
 
     # ── Validación ──────────────────────────────────────────────────
 
-    async def validar(self, afirmacion: str) -> Dict[str, Any]:
+    async def validar(self, afirmacion: str, caso_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Devuelve `{valido, afirmaciones, citas, explicacion}`.
 
@@ -101,6 +103,10 @@ class AgenteValidador:
         con el proveedor caído. Quien consuma esto tiene que distinguir los tres
         casos —tratar None como False acusaría al estudiante de un error que
         nadie verificó.
+
+        `caso_id` acota la recuperación al material etiquetado para ese caso.
+        Omitirlo busca sobre el corpus entero, que es lo que hacía antes de que
+        los chunks llevaran etiqueta.
         """
         if not self.disponible or self._validador is None:
             return _sin_juicio("El validador no está configurado.")
@@ -109,7 +115,7 @@ class AgenteValidador:
         if not texto:
             return _sin_juicio("No hay ninguna afirmación que validar.")
 
-        chunks = await self._recuperar(texto)
+        chunks = await self._recuperar(texto, caso_id)
         if not chunks:
             logger.info("Sin fragmentos para '%s': el corpus no cubre el tema o está vacío.", texto[:60])
             return _sin_juicio("El corpus no tiene material sobre este tema.")

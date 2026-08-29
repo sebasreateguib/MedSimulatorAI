@@ -266,7 +266,8 @@ class Orchestrator:
 
         try:
             resultado = await asyncio.wait_for(
-                self.validador.validar(afirmacion), timeout=TIEMPO_MAXIMO_VALIDACION
+                self.validador.validar(afirmacion, caso_id=self.caso.get("id")),
+                timeout=TIEMPO_MAXIMO_VALIDACION,
             )
         except asyncio.TimeoutError:
             logger.warning("La validación superó los %ss; se sigue sin ella.", TIEMPO_MAXIMO_VALIDACION)

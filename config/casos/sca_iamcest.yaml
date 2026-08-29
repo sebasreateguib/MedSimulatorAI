@@ -1,0 +1,39 @@
+id: "sca_iamcest_001"
+titulo: "Síndrome Coronario Agudo con Elevación del ST"
+dificultad: "intermedio"
+motivo_consulta: "Dolor opresivo en el pecho de dos horas de evolución, con sudoración."
+paciente:
+  nombre: "Ramón Villalba"
+  edad: 58
+  genero: "Masculino"
+  historia_oculta: "Fuma un paquete diario desde los 25 años y su padre murió de infarto a los 60. El dolor empezó hace dos horas cargando bultos en su negocio. Antes de venir se tomó una pastilla de nitroglicerina de su hermano, que le alivió parcialmente. Minimiza todo y repite que 'debe ser gastritis'; solo admite el tabaquismo y la automedicación si se le pregunta de forma directa y sin reproche."
+  sintomas:
+    - Dolor opresivo retroesternal irradiado a mandíbula y brazo izquierdo
+    - Sudoración profusa
+    - Náuseas
+  estado_emocional: "Asustado pero minimizando; insiste en que exagera y quiere irse a su casa."
+resultados_laboratorio:
+  hemograma: "Dentro de rangos normales"
+  troponinas: "Troponina I ultrasensible 2.400 ng/L (valor de referencia < 34), en ascenso"
+  electrolitos: "Sodio y potasio normales"
+  funcion renal: "Creatinina 1.0 mg/dL, filtrado glomerular conservado"
+  glucemia: "Glucosa 142 mg/dL"
+  perfil lipidico: "LDL 168 mg/dL, HDL 32 mg/dL, triglicéridos 240 mg/dL"
+hallazgos_ecg: "Elevación del segmento ST de 3 mm en DII, DIII y aVF, con descenso especular en DI y aVL. Ritmo sinusal a 58 lpm. No se registraron derivaciones derechas."
+estudios:
+  radiografia de torax: "Silueta cardíaca normal. Campos pulmonares sin congestión ni infiltrados."
+  ecocardiograma: "Hipocinesia de la cara inferior del ventrículo izquierdo. FEVI 45%. Sin insuficiencia mitral significativa. Ventrículo derecho de tamaño normal con función límite."
+diagnostico_correcto: "Infarto agudo de miocardio con elevación del ST de cara inferior"
+criterios_diagnosticos:
+  - "Elevación del ST mayor o igual a 1 mm en dos derivaciones contiguas (DII, DIII, aVF)"
+  - "Cambios especulares en DI y aVL"
+  - "Curva de troponinas en ascenso"
+  - "Dolor torácico opresivo típico con irradiación y cortejo vegetativo"
+  - "Solicitar derivaciones derechas (V3R-V4R) para descartar compromiso del ventrículo derecho antes de usar nitratos"
+plan_tratamiento_esperado:
+  - "Antiagregación dual: aspirina más un inhibidor del receptor P2Y12 (ticagrelor o clopidogrel)"
+  - "Anticoagulación parenteral (heparina no fraccionada o enoxaparina)"
+  - "Reperfusión urgente: angioplastia primaria dentro de los 120 minutos o fibrinolisis si no está disponible"
+  - "Estatina de alta intensidad (atorvastatina)"
+  - "Control del dolor con nitroglicerina, con precaución ante sospecha de infarto de ventrículo derecho, y morfina si persiste"
+  - "Betabloqueante una vez descartada insuficiencia cardíaca o bradiarritmia"

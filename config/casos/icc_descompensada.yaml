@@ -1,0 +1,41 @@
+id: "icc_descompensada_001"
+titulo: "Insuficiencia Cardíaca Descompensada"
+dificultad: "intermedio"
+motivo_consulta: "Se ahoga al acostarse y tiene las piernas muy hinchadas."
+paciente:
+  nombre: "Genoveva Salas"
+  edad: 79
+  genero: "Femenino"
+  historia_oculta: "Hace diez días fue al cumpleaños de un nieto y comió embutidos y conservas durante todo el fin de semana. Además dejó la furosemida por su cuenta hace tres semanas porque 'la hacía ir al baño todo el tiempo' y no podía salir de casa. Solo lo cuenta si se le pregunta por la dieta reciente o por si dejó alguna medicación, y sin que suene a regaño."
+  sintomas:
+    - Disnea paroxística nocturna que la obliga a dormir sentada
+    - Ortopnea de tres almohadas
+    - Edema con fóvea hasta las rodillas
+  estado_emocional: "Preocupada y culpable; teme haber hecho algo mal."
+resultados_laboratorio:
+  peptido natriuretico: "NT-proBNP 6.400 pg/mL"
+  funcion renal: "Urea 68 mg/dL, creatinina 1.6 mg/dL, filtrado glomerular estimado 34 mL/min"
+  electrolitos: "Sodio 132 mEq/L, potasio 3.6 mEq/L, magnesio 1.8 mg/dL"
+  hemograma: "Hemoglobina 10.8 g/dL, anemia normocítica leve"
+  troponinas: "Troponina I 38 ng/L, levemente elevada sin curva ascendente"
+  perfil hepatico: "Bilirrubina total 1.6 mg/dL, transaminasas levemente elevadas por congestión"
+  perfil tiroideo: "TSH normal"
+hallazgos_ecg: "Ritmo sinusal a 96 lpm. Bloqueo completo de rama izquierda con QRS de 152 ms. Criterios de hipertrofia ventricular izquierda."
+estudios:
+  radiografia de torax: "Cardiomegalia con índice cardiotorácico aumentado. Redistribución vascular, líneas B de Kerley y derrame pleural bilateral de predominio derecho."
+  ecocardiograma: "Ventrículo izquierdo dilatado con FEVI 30%. Hipocinesia global. Insuficiencia mitral funcional moderada. Presión sistólica pulmonar estimada 50 mmHg. Vena cava inferior dilatada sin colapso inspiratorio."
+diagnostico_correcto: "Insuficiencia cardíaca crónica con fracción de eyección reducida, descompensada por transgresión dietética y abandono del diurético"
+criterios_diagnosticos:
+  - "Congestión clínica: ortopnea, disnea paroxística nocturna, edema y ingurgitación yugular"
+  - "NT-proBNP marcadamente elevado"
+  - "FEVI menor a 40% en el ecocardiograma"
+  - "Signos radiológicos de congestión pulmonar"
+  - "Identificación de los desencadenantes: exceso de sodio en la dieta y suspensión del diurético"
+plan_tratamiento_esperado:
+  - "Diurético de asa intravenoso (furosemida) con control de diuresis y peso diario"
+  - "Restricción de sodio y de líquidos"
+  - "Oxigenoterapia y posición semisentada"
+  - "Inhibidor de la enzima convertidora o ARNI una vez estabilizada la función renal"
+  - "Betabloqueante (carvedilol o bisoprolol) al alcanzar la euvolemia, no durante la congestión aguda"
+  - "Antagonista del receptor mineralocorticoide (espironolactona) con control de potasio y creatinina"
+  - "Educación sobre adherencia y control del peso en domicilio"

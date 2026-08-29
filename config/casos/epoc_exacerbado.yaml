@@ -1,0 +1,37 @@
+id: "epoc_exacerbado_001"
+titulo: "Exacerbación Aguda de EPOC"
+dificultad: "intermedio"
+motivo_consulta: "Se ahoga más que de costumbre y la flema le cambió de color."
+paciente:
+  nombre: "Teodoro Quispe"
+  edad: 66
+  genero: "Masculino"
+  historia_oculta: "Le dijo a su familia que dejó de fumar hace dos años, pero fuma cinco o seis cigarrillos por día a escondidas. Además usa el inhalador sin cámara espaciadora y sin coordinar la inhalación, por lo que casi nada del fármaco le llega. Ninguna de las dos cosas aparece si no se le pregunta en privado y sin juzgarlo, o si no se le pide que muestre cómo usa el inhalador."
+  sintomas:
+    - Aumento de la disnea habitual en las últimas 48 horas
+    - Tos con esputo purulento y más abundante
+    - Sibilancias audibles y opresión torácica
+  estado_emocional: "Irritable y a la defensiva; teme que lo internen y lo obliguen a dejar de fumar."
+resultados_laboratorio:
+  hemograma: "Leucocitos 12.800/mm3. Hematocrito 54%, poliglobulia."
+  gasometria arterial: "pH 7.32, PaCO2 58 mmHg, PaO2 54 mmHg, bicarbonato 30 mEq/L. Acidosis respiratoria parcialmente compensada."
+  electrolitos: "Sodio 138 mEq/L, potasio 4.2 mEq/L"
+  funcion renal: "Creatinina 1.1 mg/dL"
+  proteina c reactiva: "68 mg/L"
+hallazgos_ecg: "Taquicardia sinusal a 108 lpm. Ondas P picudas en DII sugestivas de sobrecarga auricular derecha. Eje desviado a la derecha."
+estudios:
+  radiografia de torax: "Hiperinsuflación pulmonar con aplanamiento de ambos diafragmas y aumento del espacio retroesternal. Sin consolidaciones ni neumotórax."
+  ecocardiograma: "Ventrículo derecho levemente dilatado. Presión sistólica pulmonar estimada 42 mmHg. Función del ventrículo izquierdo conservada."
+diagnostico_correcto: "Exacerbación aguda de EPOC de probable causa infecciosa, con acidosis respiratoria"
+criterios_diagnosticos:
+  - "Criterios de Anthonisen: aumento de disnea, aumento del volumen del esputo y purulencia"
+  - "Antecedente de EPOC con tabaquismo activo"
+  - "Acidosis respiratoria con hipercapnia en la gasometría"
+  - "Ausencia de consolidación en la radiografía que descarta neumonía"
+plan_tratamiento_esperado:
+  - "Broncodilatadores de acción corta nebulizados: salbutamol asociado a ipratropio"
+  - "Corticoides sistémicos (prednisona) en ciclo corto"
+  - "Antibioticoterapia por la purulencia del esputo (amoxicilina-clavulánico o azitromicina)"
+  - "Oxigenoterapia controlada con objetivo de saturación 88-92% para no agravar la hipercapnia"
+  - "Ventilación no invasiva si persiste la acidosis respiratoria"
+  - "Intervención sobre el tabaquismo y revisión de la técnica inhalatoria"

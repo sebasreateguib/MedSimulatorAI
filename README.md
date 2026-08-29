@@ -176,6 +176,30 @@ FlagEmbedding      + BAAI/bge-reranker-v2-m3   # reranking
 
 **Porqué no solo vectorial:** en medicina el match léxico exacto importa. `TFG`, `CHA₂DS₂-VASc`, `amiodarona`, `NYHA III` — la búsqueda semántica pura recupera documentos "sobre el tema" cuando lo que hace falta es el documento que menciona *ese* término exacto. BM25 cubre ese flanco; el reranker resuelve el orden final.
 
+### Alcance de la búsqueda: el corpus se acota al caso en curso
+
+`chunks` es un pozo único: con once casos de cardiología, neumología, gastro y endocrinología conviviendo en la misma tabla, una afirmación sobre neumonía compite contra todo el material de fibrilación auricular. `BuscadorHibrido.buscar()` acepta un `caso_id` opcional que limita la recuperación al material etiquetado para ese caso:
+
+```python
+# agents/orchestrator.py — el caso en curso viaja hasta el WHERE
+await self.validador.validar(afirmacion, caso_id=self.caso.get("id"))
+```
+
+**Porqué en el `WHERE` y no filtrando después del rerank:** si se filtrara al final, los cuatro lugares de `FRAGMENTOS_POR_CONSULTA` ya estarían ocupados por material de otro caso y el filtro devolvería una lista corta o vacía. Acotando antes, los cuatro candidatos son siempre del caso.
+
+**Porqué `casos` es una lista y no un id suelto:** un documento sirve a varios casos a la vez. La etiqueta de enoxaparina la necesitan `fa_aguda` y `tep_agudo`; con un campo escalar, la segunda ingesta le robaba el chunk a la primera. Por lo mismo, `procesar_y_guardar` **lee las etiquetas vigentes antes de borrar y las une con las nuevas** — el borrado por `documento_origen` que hace idempotente a la reingesta se llevaba puesta la etiqueta anterior.
+
+```sql
+-- ARRAY y no JSON en Text (que es lo que hace `metadatos`): este campo se
+-- filtra en el WHERE, aquel solo se lee. GIN es el índice que sirve al
+-- operador de contención de arrays.
+casos character varying[]   -- ix_chunks_casos gin (casos)
+```
+
+**Degrada solo:** si el caso no tiene ningún chunk etiquetado —corpus viejo sin migrar, o un caso para el que nadie ingirió nada— se repite la búsqueda sobre el corpus entero con un `WARNING` en el log. Es la misma decisión que el resto del circuito: vale más una cita de un dominio vecino que ninguna cita. Un chunk sin etiquetar es invisible para toda búsqueda filtrada, que es el comportamiento correcto para material que no corresponde a ningún caso.
+
+Medido sobre los once casos, una afirmación del plan esperado de cada uno: **40 fragmentos recuperados, cero de otro caso**, y las diez afirmaciones siguen respaldadas con cita literal. La prueba que justifica el filtro es la cruzada — una afirmación de neumonía consultada bajo el `caso_id` de la cetoacidosis devuelve solo material de cetoacidosis y `valido=None`, en vez de una cita real pero fuera de contexto.
+
 ---
 
 ## 4. Modelos: multi-proveedor deliberado
@@ -421,6 +445,25 @@ Con GPC + PubMed OA + openFDA hay corpus suficiente y defendible. Los tratados q
 
 **Ojo con qué es openFDA.** Son fichas técnicas aprobadas, no criterio clínico. La etiqueta de metoprolol tartrato **no menciona fibrilación auricular ni una vez**: está aprobada para hipertensión, angina e infarto, y su uso para control de frecuencia en FA es *off-label* respecto de la FDA aunque sea estándar en las guías. Sirve para verificar una dosis, una contraindicación o una interacción; no dice cuándo control de frecuencia le gana a control de ritmo, ni cómo se calcula un CHA₂DS₂-VASc. Para lo que el caso `fa_aguda` espera evaluar, **las GPC no son un extra: son la fuente que decide**.
 
+### Estado del corpus
+
+Sin GPC todavía (`corpus/gpc/` vacío). Lo ingerido son 48 fármacos de openFDA y 309 artículos de PubMed, repartidos así:
+
+| Fuente | Documentos | Chunks | Qué aporta |
+|---|---|---|---|
+| openFDA | 48 fármacos | 1.059 | Dosis, contraindicaciones, interacciones, reacciones adversas |
+| PubMed | 309 artículos | 1.275 | Evidencia: metaanálisis, ensayos, revisiones |
+| **Total** | **357** | **2.334** | 2.332 etiquetados por caso |
+
+Solo el 12% de los chunks de openFDA son "Indicaciones y uso" (131 de 1.059); el 88% restante son reacciones adversas, dosis, interacciones y contraindicaciones, que aplican en cualquier caso donde el fármaco aparezca. **Esa mitad del corpus generaliza**: 11 fármacos ya están etiquetados para más de un caso, y la etiqueta de metoprolol cubre hipertensión, angina e infarto además de la FA que la trajo. La mitad de PubMed no generaliza: cada consulta se escribió apuntada a un caso.
+
+**Lo que PubMed no puede darte.** Trae abstracts, no texto completo, así que respalda el *qué* pero casi nunca el *cuánto*. "Metoprolol IV para control de frecuencia" queda `correcto`; "metoprolol 5 mg IV en bolo" se parte en dos afirmaciones y la de la dosis vuelve `no_verificable`, porque ningún abstract escribe el número y `_verificar_citas` no deja pasar una cita que no esté literal en el chunk. Lo mismo con "reponer potasio si es menor a 3.3 mEq/L". **Los umbrales y las posologías solo los cierra una GPC.**
+
+Dos limitaciones medidas que siguen abiertas:
+
+- **Chunks duplicados por documento.** Los cuatro fragmentos que recibe el validador pueden ser secciones distintas del mismo paper — en la consulta de neumonía, tres de cuatro. El validador cree ver cuatro fuentes independientes y ve dos. Se arregla con un `distinct on (documento_origen)` en la recuperación.
+- **La población del estudio no se compara con la del paciente.** En la crisis asmática los cuatro chunks recuperados son de estudios pediátricos y el paciente del caso tiene 23 años. La cita es real y verificable; la población no corresponde.
+
 ---
 
 ## 8. Costos
@@ -525,18 +568,18 @@ medsimulator/
 │   │   ├── materiales.py          # ingesta del material subido (pdf/imagen/texto)
 │   │   └── fuentes/               # pubmed.py, openfda.py, gpc.py — cada una chunkea por sección
 │   ├── embeddings.py              # bge-m3 local
-│   ├── busqueda.py                # híbrida BM25 + vectorial + rerank
+│   ├── busqueda.py                # híbrida BM25 + vectorial + rerank, acotable por caso
 │   ├── busqueda_material.py       # ídem sobre el material del usuario, sin reranker
 │   ├── validador_nativo.py        # con citations de Anthropic
 │   └── validador_casero.py        # structured output + verificación
 ├── db/
-│   ├── models.py
+│   ├── models.py                  # `Chunk.casos` etiqueta a qué casos sirve cada fragmento
 │   └── migrations/                # alembic (async), versions/ con el esquema
 ├── scripts/
 │   └── precargar_modelos.py       # descarga y warmup de los modelos locales
 ├── config/
 │   ├── agents.yaml                # asignación modelo↔agente
-│   └── casos/                     # casos clínicos en YAML
+│   └── casos/                     # 11 casos clínicos en YAML, uno por archivo
 ├── tests/
 └── frontend/                      # Next.js
 ```
@@ -600,6 +643,13 @@ antes de las migraciones, `alembic stamp head` la marca como al día sin
 reaplicar nada. `init_db()` sigue corriendo en el lifespan como red de
 seguridad, pero solo crea tablas que falten: no altera las existentes.
 
+Ese último punto importa para `b3d1c7a92f40`, que agrega `chunks.casos`: como
+**altera** una tabla existente, `init_db()` no la aplica. Una base anterior al
+filtro por caso necesita `alembic upgrade head` sí o sí; hasta entonces la
+columna no existe y toda búsqueda con `caso_id` falla. Después de migrar, los
+chunks ya ingeridos quedan con `casos = NULL` y solo los ve una búsqueda sin
+filtro: hay que retiquetarlos, con un `UPDATE` o reingiriendo con `--caso`.
+
 Al arrancar, la app carga en segundo plano los modelos de ingesta. La primera
 vez son varios minutos (descarga + warmup); después, unos segundos. Se apaga con
 `PRECARGAR_MODELOS=false`.
@@ -607,20 +657,66 @@ vez son varios minutos (descarga + warmup); después, unos segundos. Se apaga co
 El frontend pega a `/api` y Vite lo proxea a `http://localhost:8000`. Para
 apuntar a otro backend, `VITE_API_PROXY_TARGET` en `frontend/.env`.
 
+### Casos clínicos
+
+Once casos en `config/casos/*.yaml`. Un caso se identifica por el campo `id` que declara **adentro** del archivo, no por cómo se llame el archivo.
+
+| Caso | Dificultad | Gancho oculto en la anamnesis |
+|---|---|---|
+| Fibrilación auricular aguda | intermedio | Atracón de alcohol de fin de semana (holiday heart) |
+| SCA con elevación del ST | intermedio | Se automedicó nitroglicerina ajena; faltan derivaciones derechas |
+| Tromboembolia pulmonar | intermedio | Vuelo de 12 h + anticonceptivos orales |
+| Neumonía adquirida en la comunidad | básico | Vive solo, abandonó medicación, atragantamiento previo |
+| Exacerbación de EPOC | intermedio | Fuma a escondidas y usa mal el inhalador |
+| Cetoacidosis diabética | intermedio | Omite insulina para bajar de peso |
+| Insuficiencia cardíaca descompensada | intermedio | Exceso de sal y abandonó la furosemida |
+| Crisis asmática grave | básico | Gato nuevo, sobreuso de rescate, dejó el corticoide |
+| Pancreatitis aguda biliar | intermedio | Cólicos biliares previos nunca consultados |
+| Pielonefritis en el embarazo | avanzado | Embarazo no declarado que cambia el antibiótico |
+| HDA por úlcera péptica | intermedio | Ibuprofeno diario que "no cuenta como medicamento" |
+
+El contrato real del YAML es lo que leen `agents/tools.py`, `agents/tutor.py` y `agents/especialista.py`, no el modelo `CasoClinico` de `llm/schemas.py` — que se exporta pero nadie usa para validar:
+
+```yaml
+id: "fa_aguda_001"                # identidad; `--caso` de la ingesta usa esto
+titulo: / dificultad: / motivo_consulta:
+paciente:
+  nombre: / edad: / genero: / estado_emocional:
+  historia_oculta: "..."          # lo que el paciente calla hasta que le pregunten bien
+  sintomas: [...]
+resultados_laboratorio: {...}     # `identificar_laboratorios` matchea por palabra (>4 letras)
+hallazgos_ecg: "..."              # atajo; equivale a estudios.ecg
+estudios: {...}                   # las claves pasan por `identificar_estudio`
+diagnostico_correcto: "..."       # lo consume el tutor
+criterios_diagnosticos: [...]     #   ídem
+plan_tratamiento_esperado: [...]  #   ídem, y de acá salen las consultas de ingesta
+```
+
+**Restricción a tener en cuenta:** `SINONIMOS_ESTUDIO` en `agents/tools.py` reconoce **seis** estudios — `ecg`, `radiografia_torax`, `tac_torax`, `ecocardiograma`, `ecografia_abdominal`, `resonancia`. Una clave de `estudios:` que no resuelva a uno de esos es material muerto: el estudiante que la pida recibe "sin alteraciones relevantes". No hay TAC de cráneo, así que un caso neurológico necesita ampliar ese diccionario primero.
+
 ### Ingesta del corpus
 
 ```bash
 # Guías clínicas en PDF. Se bajan a mano a ./corpus/gpc/ (el directorio está en .gitignore)
-python -m medsimulator.rag.ingesta.run --fuente gpc --path ./corpus/gpc/
+python -m medsimulator.rag.ingesta.run --fuente gpc --path ./corpus/gpc/ --caso fa_aguda_001
 
 # Fármacos: uno por invocación. Busca por marca y cae a nombre genérico
-python -m medsimulator.rag.ingesta.run --fuente openfda --query "Metoprolol"
+python -m medsimulator.rag.ingesta.run --fuente openfda --query "Metoprolol" --caso fa_aguda_001
 
 # Evidencia: tope de 10 artículos por consulta (`max_results` en `buscar_pubmed`)
-python -m medsimulator.rag.ingesta.run --fuente pubmed --query "atrial fibrillation rate control"
+python -m medsimulator.rag.ingesta.run --fuente pubmed \
+    --query "atrial fibrillation rate control" --caso fa_aguda_001
+
+# `--caso` es repetible: un fármaco que sirve a varios casos se etiqueta para todos
+python -m medsimulator.rag.ingesta.run --fuente openfda --query "Enoxaparin" \
+    --caso fa_aguda_001 --caso tep_agudo_001
 ```
 
-La reingesta es idempotente por documento: `procesar_y_guardar` borra los chunks previos de cada `documento_origen` antes de insertar, así que repetir un comando no duplica el corpus.
+`--caso` toma el `id` declarado **adentro** del YAML (`fa_aguda_001`), no el nombre del archivo. Sin el flag el chunk queda sin etiquetar y solo lo ve una búsqueda sin filtro; ver *Alcance de la búsqueda* más arriba.
+
+La reingesta es idempotente por documento: `procesar_y_guardar` borra los chunks previos de cada `documento_origen` antes de insertar, así que repetir un comando no duplica el corpus. Las etiquetas de caso sobreviven a ese borrado: se leen antes y se unen con las nuevas.
+
+**Para un caso nuevo**, las consultas salen del propio YAML: una de PubMed por cada ítem de `plan_tratamiento_esperado`, y un `--fuente openfda` por cada fármaco que ese plan menciona.
 
 ---
 

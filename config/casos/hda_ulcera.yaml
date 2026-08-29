@@ -1,0 +1,39 @@
+id: "hda_ulcera_001"
+titulo: "Hemorragia Digestiva Alta por Úlcera Péptica"
+dificultad: "intermedio"
+motivo_consulta: "Deposiciones negras desde hace dos días y mareo al pararse."
+paciente:
+  nombre: "Ignacio Bermúdez"
+  edad: 63
+  genero: "Masculino"
+  historia_oculta: "Toma ibuprofeno de 600 mg dos o tres veces por día desde hace ocho meses por dolor de rodilla, comprado sin receta. No lo considera un medicamento y por eso responde que 'no toma nada' cuando se le pregunta en general; solo lo admite si se le pregunta específicamente por analgésicos, antiinflamatorios o remedios para el dolor. No bebe alcohol y no tiene antecedentes hepáticos."
+  sintomas:
+    - Melena de dos días de evolución
+    - Mareo y visión borrosa al incorporarse
+    - Debilidad marcada y palidez
+  estado_emocional: "Preocupado por el color de las deposiciones; teme que sea cáncer."
+resultados_laboratorio:
+  hemograma: "Hemoglobina 7.8 g/dL, hematocrito 24%, volumen corpuscular medio 76 fL. Plaquetas 310.000/mm3."
+  funcion renal: "Urea 98 mg/dL, creatinina 1.0 mg/dL. Relación urea/creatinina desproporcionadamente elevada."
+  coagulacion: "TP, INR y TTPA dentro de rangos normales"
+  perfil hepatico: "Transaminasas, bilirrubina y albúmina normales"
+  electrolitos: "Sodio 139 mEq/L, potasio 4.1 mEq/L"
+  grupo sanguineo: "O positivo. Pruebas cruzadas solicitadas."
+hallazgos_ecg: "Taquicardia sinusal a 112 lpm. Sin signos de isquemia aguda."
+estudios:
+  ecografia abdominal: "Hígado de tamaño y ecoestructura normales. Sin esplenomegalia, sin ascitis, sin signos de hipertensión portal. Vesícula y vía biliar normales."
+  radiografia de torax: "Sin neumoperitoneo. Campos pulmonares limpios."
+diagnostico_correcto: "Hemorragia digestiva alta por úlcera péptica asociada al consumo crónico de antiinflamatorios no esteroideos"
+criterios_diagnosticos:
+  - "Melena con anemia y repercusión hemodinámica (taquicardia e hipotensión ortostática)"
+  - "Relación urea/creatinina elevada por digestión de la sangre en el tubo digestivo"
+  - "Consumo crónico de AINE como factor causal identificable en el interrogatorio"
+  - "Ausencia de estigmas de hepatopatía y ecografía normal, que aleja el origen varicoso"
+  - "Estratificación de riesgo con la escala de Glasgow-Blatchford"
+plan_tratamiento_esperado:
+  - "Estabilización hemodinámica con cristaloides y dos accesos venosos de grueso calibre"
+  - "Transfusión de glóbulos rojos con estrategia restrictiva, con umbral de hemoglobina de 7 g/dL"
+  - "Inhibidor de la bomba de protones intravenoso en dosis altas (pantoprazol u omeprazol)"
+  - "Endoscopia digestiva alta dentro de las 24 horas, con hemostasia endoscópica si hay estigmas de sangrado"
+  - "Suspender de inmediato el antiinflamatorio y ofrecer una alternativa analgésica"
+  - "Investigar y erradicar Helicobacter pylori tras el episodio agudo"

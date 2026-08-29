@@ -5,6 +5,7 @@ Módulo de modelos SQLAlchemy y pgvector para el sistema MedSimulator.
 import logging
 import datetime
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON, Index
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import declarative_base, relationship, mapped_column, Mapped
 from pgvector.sqlalchemy import Vector
 
@@ -75,6 +76,13 @@ class Chunk(Base):
     seccion: Mapped[str] = mapped_column(String, nullable=True)
     texto: Mapped[str] = mapped_column(Text, nullable=False)
     metadatos: Mapped[str] = mapped_column(Text, nullable=True) # JSON con metadatos adicionales
+    # A qué casos clínicos sirve este chunk. Es una lista y no un solo id porque
+    # un documento cubre varios casos a la vez: la etiqueta de enoxaparina la
+    # necesitan tanto la fibrilación auricular como la tromboembolia pulmonar, y
+    # con un campo escalar la segunda ingesta le robaría el chunk a la primera.
+    # Va como ARRAY y no como JSON en Text —que es lo que hace `metadatos`—
+    # porque este campo se filtra en el WHERE y aquel solo se lee.
+    casos: Mapped[list] = mapped_column(ARRAY(String), nullable=True)
     # Dimensión del vector 1024, ajustado para el modelo de embedding específico (ej. bge-m3)
     embedding = mapped_column(Vector(1024))
 
@@ -89,6 +97,9 @@ class Chunk(Base):
             postgresql_with={"m": 16, "ef_construction": 64},
             postgresql_ops={"embedding": "vector_cosine_ops"}
         ),
+        # GIN es el índice que sirve al operador de contención de arrays, que es
+        # con lo que `BuscadorHibrido` acota la búsqueda al caso en curso.
+        Index("ix_chunks_casos", "casos", postgresql_using="gin"),
     )
 
     def __repr__(self) -> str:

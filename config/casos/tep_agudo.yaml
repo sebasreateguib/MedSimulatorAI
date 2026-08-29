@@ -1,0 +1,38 @@
+id: "tep_agudo_001"
+titulo: "Tromboembolia Pulmonar Aguda"
+dificultad: "intermedio"
+motivo_consulta: "Falta de aire de aparición brusca y dolor al respirar hondo."
+paciente:
+  nombre: "Lucía Ferreyra"
+  edad: 44
+  genero: "Femenino"
+  historia_oculta: "Volvió hace tres días de un vuelo de doce horas y toma anticonceptivos orales desde hace años. Notó la pantorrilla derecha algo hinchada y dolorida durante el viaje, pero lo atribuyó al cansancio. No menciona el vuelo, los anticonceptivos ni la pierna a menos que se le pregunte específicamente por viajes, medicación habitual o factores de riesgo."
+  sintomas:
+    - Disnea de aparición súbita
+    - Dolor torácico pleurítico en el costado derecho
+    - Palpitaciones y sensación de mareo
+  estado_emocional: "Angustiada, con sensación de muerte inminente; le cuesta hablar en frases largas."
+resultados_laboratorio:
+  hemograma: "Dentro de rangos normales"
+  dimero d: "3.850 ng/mL (valor de referencia < 500)"
+  gasometria arterial: "pH 7.48, PaO2 58 mmHg, PaCO2 30 mmHg, saturación 90% al aire ambiente"
+  troponinas: "Troponina I 45 ng/L, levemente elevada"
+  funcion renal: "Creatinina 0.8 mg/dL, filtrado glomerular normal"
+  coagulacion: "TP e INR normales"
+hallazgos_ecg: "Taquicardia sinusal a 118 lpm. Patrón S1Q3T3. Inversión de onda T en V1-V3. Sin elevación del ST."
+estudios:
+  radiografia de torax: "Sin consolidaciones, sin neumotórax, sin derrame significativo. Discreta oligohemia en campo medio derecho."
+  tac de torax: "AngioTAC de arterias pulmonares: defecto de repleción endoluminal en arteria pulmonar lobar inferior derecha y en ramas segmentarias. Relación ventrículo derecho/ventrículo izquierdo de 1.1."
+  ecocardiograma: "Ventrículo derecho dilatado con disfunción sistólica leve. Septum interventricular con movimiento paradójico. Presión sistólica pulmonar estimada 48 mmHg."
+diagnostico_correcto: "Tromboembolia pulmonar aguda de riesgo intermedio-alto"
+criterios_diagnosticos:
+  - "Defecto de repleción en angioTAC de arterias pulmonares"
+  - "Factores de riesgo: inmovilización prolongada por vuelo largo y anticonceptivos orales"
+  - "Dímero D marcadamente elevado con probabilidad clínica alta (Wells)"
+  - "Disfunción del ventrículo derecho en ecocardiograma con troponina elevada, que define el riesgo intermedio-alto"
+plan_tratamiento_esperado:
+  - "Anticoagulación inmediata con heparina de bajo peso molecular (enoxaparina) o anticoagulante oral directo (apixabán o rivaroxabán)"
+  - "Estratificación de riesgo con índice PESI y evaluación de disfunción del ventrículo derecho"
+  - "Oxigenoterapia para mantener saturación por encima de 90%"
+  - "Monitorización estrecha: reservar la trombólisis sistémica para deterioro hemodinámico"
+  - "Investigar y suspender el factor precipitante (anticonceptivos orales)"

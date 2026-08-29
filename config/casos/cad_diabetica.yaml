@@ -1,0 +1,38 @@
+id: "cad_diabetica_001"
+titulo: "Cetoacidosis Diabética"
+dificultad: "intermedio"
+motivo_consulta: "Vómitos, dolor de panza y mucha sed desde hace dos días."
+paciente:
+  nombre: "Micaela Ordóñez"
+  edad: 19
+  genero: "Femenino"
+  historia_oculta: "Tiene diabetes tipo 1 desde los 12 años y hace tres días que no se aplica la insulina: descubrió que salteándose dosis baja de peso, y viene haciéndolo de forma intermitente desde hace meses. Le da vergüenza y lo niega si se le pregunta de frente o con tono de reproche; solo lo cuenta si el médico explora el tema del peso y la imagen corporal con empatía."
+  sintomas:
+    - Poliuria y polidipsia intensas
+    - Dolor abdominal difuso y vómitos
+    - Respiración profunda y rápida
+  estado_emocional: "Somnolienta y evasiva; responde con monosílabos cuando se toca el tema de la insulina."
+resultados_laboratorio:
+  glucemia: "482 mg/dL"
+  gasometria arterial: "pH 7.14, bicarbonato 8 mEq/L, PaCO2 22 mmHg. Acidosis metabólica con anión gap de 24."
+  cetonas: "Cuerpos cetónicos en sangre 5.8 mmol/L. Cetonuria de tres cruces."
+  electrolitos: "Potasio 5.3 mEq/L, sodio 130 mEq/L (sodio corregido 136), cloro 98 mEq/L"
+  funcion renal: "Urea 48 mg/dL, creatinina 1.3 mg/dL"
+  hemograma: "Leucocitos 16.200/mm3 sin foco infeccioso evidente"
+  examen de orina: "Glucosuria y cetonuria intensas. Sin nitritos ni piuria."
+hallazgos_ecg: "Ritmo sinusal a 112 lpm. Ondas T picudas compatibles con la hiperpotasemia. Sin arritmias."
+estudios:
+  radiografia de torax: "Campos pulmonares limpios. Sin foco infeccioso."
+diagnostico_correcto: "Cetoacidosis diabética por omisión de insulina"
+criterios_diagnosticos:
+  - "Tríada diagnóstica: hiperglucemia, acidosis metabólica con anión gap elevado y cetonemia"
+  - "pH menor a 7.30 con bicarbonato menor a 15 mEq/L"
+  - "Identificación del desencadenante: omisión deliberada de insulina"
+  - "Reconocer que el potasio sérico elevado coexiste con un déficit corporal total de potasio"
+plan_tratamiento_esperado:
+  - "Reposición de volumen con solución salina isotónica antes que cualquier otra medida"
+  - "Insulina regular en infusión intravenosa continua, no en bolo subcutáneo"
+  - "Reposición de potasio guiada por el valor sérico, difiriendo la insulina si el potasio es menor a 3.3 mEq/L"
+  - "Monitorización horaria de glucemia, electrolitos y cierre del anión gap"
+  - "Agregar dextrosa al suero cuando la glucemia baje de 200 mg/dL, manteniendo la insulina"
+  - "Abordar el desencadenante: derivación a salud mental por la omisión de insulina asociada a la imagen corporal"

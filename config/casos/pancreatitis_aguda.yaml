@@ -1,0 +1,41 @@
+id: "pancreatitis_aguda_001"
+titulo: "Pancreatitis Aguda Biliar"
+dificultad: "intermedio"
+motivo_consulta: "Dolor muy fuerte en la boca del estómago que se le va a la espalda."
+paciente:
+  nombre: "Rosalía Mendieta"
+  edad: 52
+  genero: "Femenino"
+  historia_oculta: "Desde hace un año tiene episodios de dolor en el costado derecho después de comidas grasas, que duran unas horas y se le pasan solos; nunca consultó porque siempre cedían. Anoche cenó una picada abundante. No bebe alcohol. Solo relata los episodios previos si se le pregunta por dolores parecidos en el pasado o por su relación con las comidas."
+  sintomas:
+    - Dolor epigástrico intenso en cinturón irradiado a la espalda
+    - Vómitos que no alivian el dolor
+    - Alivio parcial al inclinarse hacia adelante
+  estado_emocional: "Dolorida e inquieta, no encuentra posición cómoda en la camilla."
+resultados_laboratorio:
+  lipasa: "1.240 U/L (más de tres veces el límite superior normal)"
+  amilasa: "890 U/L"
+  perfil hepatico: "Bilirrubina total 3.2 mg/dL a predominio directo, fosfatasa alcalina 320 U/L, GGT 410 U/L, ALT 210 U/L"
+  hemograma: "Leucocitos 15.400/mm3. Hematocrito 47%."
+  electrolitos: "Calcio 7.8 mg/dL, potasio 3.5 mEq/L, sodio 138 mEq/L"
+  funcion renal: "Urea 52 mg/dL, creatinina 1.2 mg/dL"
+  proteina c reactiva: "180 mg/L a las 48 horas"
+  glucemia: "168 mg/dL"
+hallazgos_ecg: "Ritmo sinusal a 102 lpm, sin alteraciones agudas."
+estudios:
+  ecografia abdominal: "Vesícula biliar con múltiples cálculos, el mayor de 8 mm. Vía biliar principal dilatada a 9 mm. Páncreas aumentado de tamaño y edematoso, con líquido peripancreático."
+  tac de torax: "Bases pulmonares con atelectasias laminares y derrame pleural izquierdo de escasa cuantía."
+diagnostico_correcto: "Pancreatitis aguda de origen biliar"
+criterios_diagnosticos:
+  - "Dos de los tres criterios de Atlanta: dolor abdominal típico, lipasa mayor a tres veces el límite normal e imagen compatible"
+  - "Colelitiasis con vía biliar dilatada y patrón colestásico en el hepatograma como etiología"
+  - "Ausencia de consumo de alcohol que descarta la otra causa frecuente"
+  - "Estratificación de gravedad con BISAP o criterios de Ranson"
+plan_tratamiento_esperado:
+  - "Reposición hidroelectrolítica precoz y dirigida por objetivos, preferentemente con Ringer lactato"
+  - "Analgesia adecuada con opioides"
+  - "Antiemético (ondansetrón) para el control de los vómitos"
+  - "Renutrición oral precoz según tolerancia, evitando el ayuno prolongado"
+  - "No indicar antibióticos profilácticos en ausencia de infección documentada o necrosis infectada"
+  - "Valorar colangiopancreatografía retrógrada endoscópica si hay colangitis u obstrucción biliar persistente"
+  - "Colecistectomía en el mismo ingreso una vez resuelto el cuadro"

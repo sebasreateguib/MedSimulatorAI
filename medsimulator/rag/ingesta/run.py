@@ -6,9 +6,9 @@ import argparse
 import json
 import logging
 import asyncio
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
 from medsimulator.db import async_session_factory
 from medsimulator.db.models import Chunk
@@ -34,6 +34,14 @@ def parse_args():
     parser.add_argument("--path", type=str, help="Ruta al directorio de documentos locales")
     parser.add_argument("--query", type=str, help="Consulta para fuentes en línea")
     parser.add_argument(
+        "--caso",
+        action="append",
+        dest="casos",
+        metavar="CASO_ID",
+        help="Id del caso clínico al que sirve este material; repetible. "
+             "Sin esto el chunk queda sin etiqueta y solo lo ve una búsqueda sin filtro.",
+    )
+    parser.add_argument(
         "--init-db",
         action="store_true",
         help="Crea la extensión vector y las tablas antes de ingestar (Alembic no está inicializado)",
@@ -48,7 +56,7 @@ def _documento_de(chunk: Dict[str, Any]) -> str:
     return chunk.get("fuente") or "desconocido"
 
 
-def _a_modelo(chunk: Dict[str, Any], embedding: List[float]) -> Chunk:
+def _a_modelo(chunk: Dict[str, Any], embedding: List[float], casos: Optional[List[str]] = None) -> Chunk:
     """
     Traduce la forma que emiten los chunkers a las columnas de la tabla.
 
@@ -70,11 +78,16 @@ def _a_modelo(chunk: Dict[str, Any], embedding: List[float]) -> Chunk:
         texto=chunk["texto"].strip(),
         # ensure_ascii=False para que los acentos queden legibles en la columna.
         metadatos=json.dumps(metadatos, ensure_ascii=False) if metadatos else None,
+        casos=sorted(casos) if casos else None,
         embedding=embedding,
     )
 
 
-async def procesar_y_guardar(chunks: List[Dict[str, Any]], fuente_nombre: str) -> None:
+async def procesar_y_guardar(
+    chunks: List[Dict[str, Any]],
+    fuente_nombre: str,
+    casos: Optional[List[str]] = None,
+) -> None:
     """
     Genera los embeddings de los chunks y los persiste en pgvector.
 
@@ -82,6 +95,12 @@ async def procesar_y_guardar(chunks: List[Dict[str, Any]], fuente_nombre: str) -
     chunks previos de cada `documento_origen` del lote. Sin eso, correr la
     ingesta dos veces duplica el corpus entero y el reranker termina devolviendo
     el mismo pasaje repetido en los primeros puestos.
+
+    `casos` son los ids de casos clínicos a los que sirve este material. Como el
+    borrado previo se lleva puesta la etiqueta que el documento ya tenía, antes
+    de borrar se leen las etiquetas vigentes y se unen con las nuevas: ingerir
+    enoxaparina para la tromboembolia no puede dejar sin ella a la fibrilación
+    auricular, que la había ingerido antes.
     """
     if not chunks:
         logger.warning("No se recibieron chunks de %s: nada que guardar.", fuente_nombre)
@@ -102,6 +121,16 @@ async def procesar_y_guardar(chunks: List[Dict[str, Any]], fuente_nombre: str) -
     documentos = sorted({_documento_de(c) for c in utiles})
 
     async with async_session_factory() as session:
+        # Las etiquetas que ya tenía cada documento, para no perderlas al borrar.
+        previas: Dict[str, set] = {}
+        filas = await session.execute(
+            select(Chunk.documento_origen, Chunk.casos).where(
+                Chunk.documento_origen.in_(documentos)
+            )
+        )
+        for documento, etiquetas in filas:
+            previas.setdefault(documento, set()).update(etiquetas or [])
+
         borrado = await session.execute(
             delete(Chunk).where(Chunk.documento_origen.in_(documentos))
         )
@@ -112,10 +141,14 @@ async def procesar_y_guardar(chunks: List[Dict[str, Any]], fuente_nombre: str) -
                 len(documentos),
             )
 
+        nuevos = set(casos or [])
         for i in range(0, len(utiles), LOTE_INSERCION):
             lote = utiles[i : i + LOTE_INSERCION]
             vectores = embeddings[i : i + LOTE_INSERCION]
-            session.add_all([_a_modelo(c, v) for c, v in zip(lote, vectores)])
+            session.add_all([
+                _a_modelo(c, v, previas.get(_documento_de(c), set()) | nuevos)
+                for c, v in zip(lote, vectores)
+            ])
             await session.flush()
 
         await session.commit()
@@ -142,7 +175,7 @@ async def main():
             logger.error("Se requiere --path para la fuente 'gpc'")
             return
         chunks = ingestar_directorio(args.path)
-        await procesar_y_guardar(chunks, "GPC")
+        await procesar_y_guardar(chunks, "GPC", args.casos)
         
     elif args.fuente == "pubmed":
         if not args.query:
@@ -150,7 +183,7 @@ async def main():
             return
         pmids = await buscar_pubmed(args.query)
         articulos = await obtener_articulos_batch(pmids)
-        await procesar_y_guardar(chunkear_articulos(articulos), "PubMed")
+        await procesar_y_guardar(chunkear_articulos(articulos), "PubMed", args.casos)
         
     elif args.fuente == "openfda":
         if not args.query:
@@ -160,7 +193,7 @@ async def main():
         if "error" in info:
             logger.error(f"Error desde OpenFDA: {info['error']}")
             return
-        await procesar_y_guardar(chunkear_medicamento(info), "OpenFDA")
+        await procesar_y_guardar(chunkear_medicamento(info), "OpenFDA", args.casos)
 
 if __name__ == "__main__":
     asyncio.run(main())

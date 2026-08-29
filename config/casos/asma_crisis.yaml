@@ -1,0 +1,36 @@
+id: "asma_crisis_001"
+titulo: "Crisis Asmática Grave"
+dificultad: "basico"
+motivo_consulta: "No puede respirar bien y le silba el pecho desde anoche."
+paciente:
+  nombre: "Bruno Cañete"
+  edad: 23
+  genero: "Masculino"
+  historia_oculta: "Adoptó un gato hace un mes y duerme con él en la cama. Dejó el corticoide inhalado hace medio año porque 'no sentía que hiciera nada' y desde entonces usa el salbutamol todos los días, hasta ocho veces por jornada; ya va por el tercer envase del mes. No menciona ni el gato ni el sobreuso del rescate salvo pregunta directa sobre mascotas nuevas, tratamiento de mantenimiento o cuántas veces usa el inhalador."
+  sintomas:
+    - Disnea que no le permite completar frases
+    - Sibilancias espiratorias audibles a distancia
+    - Tos seca persistente y uso de músculos accesorios
+  estado_emocional: "Muy ansioso, sentado inclinado hacia adelante, con miedo evidente."
+resultados_laboratorio:
+  gasometria arterial: "pH 7.38, PaCO2 42 mmHg, PaO2 68 mmHg, saturación 91%. La normocapnia en una crisis grave es un signo de alarma por fatiga muscular."
+  hemograma: "Eosinófilos 780/mm3. Resto sin alteraciones."
+  electrolitos: "Potasio 3.4 mEq/L tras las nebulizaciones iniciales"
+  proteina c reactiva: "4 mg/L, normal"
+hallazgos_ecg: "Taquicardia sinusal a 124 lpm. Sin alteraciones isquémicas."
+estudios:
+  radiografia de torax: "Hiperinsuflación pulmonar bilateral. Sin neumotórax, sin neumomediastino, sin consolidaciones."
+diagnostico_correcto: "Crisis asmática grave con mal control de base por abandono del corticoide inhalado"
+criterios_diagnosticos:
+  - "Incapacidad para completar frases, uso de músculos accesorios y taquipnea"
+  - "Sibilancias espiratorias difusas con espiración prolongada"
+  - "PaCO2 normal o elevada en una crisis grave como signo de fatiga respiratoria inminente"
+  - "Sobreuso de agonista beta2 de rescate y abandono del corticoide inhalado como causa del descontrol"
+  - "Identificación del desencadenante alergénico (exposición reciente a epitelio de gato)"
+plan_tratamiento_esperado:
+  - "Salbutamol nebulizado o con cámara espaciadora, en dosis repetidas, asociado a ipratropio"
+  - "Corticoides sistémicos precoces (metilprednisolona o prednisona)"
+  - "Oxigenoterapia con objetivo de saturación 93-95%"
+  - "Sulfato de magnesio intravenoso si no responde al tratamiento inicial"
+  - "Evaluar traslado a unidad de cuidados intensivos ante fatiga o hipercapnia progresiva"
+  - "Al alta: reiniciar corticoide inhalado de mantenimiento, revisar técnica y retirar el alérgeno"

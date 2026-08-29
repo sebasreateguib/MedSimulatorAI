@@ -1,0 +1,37 @@
+id: "nac_adulto_001"
+titulo: "Neumonía Adquirida en la Comunidad"
+dificultad: "basico"
+motivo_consulta: "Fiebre alta y tos con flema desde hace tres días."
+paciente:
+  nombre: "Aurelio Paredes"
+  edad: 71
+  genero: "Masculino"
+  historia_oculta: "Vive solo desde que enviudó y hace meses que no toma la medicación para la presión porque se le acabó y no fue a renovarla. Hace una semana se atragantó feo comiendo y tosió mucho esa noche. No cuenta ninguna de las dos cosas salvo que se le pregunte por su situación en casa, por adherencia a la medicación o por episodios de atragantamiento."
+  sintomas:
+    - Tos productiva con expectoración herrumbrosa
+    - Fiebre de 39 grados con escalofríos
+    - Disnea de esfuerzo y dolor pleurítico derecho
+  estado_emocional: "Cansado y algo confuso por momentos; se disculpa por molestar."
+resultados_laboratorio:
+  hemograma: "Leucocitos 18.500/mm3 con 88% de neutrófilos y desviación izquierda"
+  procalcitonina: "2.8 ng/mL, elevada"
+  funcion renal: "Urea 62 mg/dL, creatinina 1.4 mg/dL"
+  electrolitos: "Sodio 130 mEq/L, potasio 4.0 mEq/L"
+  gasometria arterial: "pH 7.44, PaO2 62 mmHg, PaCO2 33 mmHg, saturación 91% al aire ambiente"
+  proteina c reactiva: "245 mg/L"
+hallazgos_ecg: "Ritmo sinusal a 104 lpm, sin alteraciones agudas de la repolarización."
+estudios:
+  radiografia de torax: "Consolidación homogénea en lóbulo inferior derecho con broncograma aéreo. Pequeño derrame pleural derecho asociado."
+  tac de torax: "Consolidación con broncograma en lóbulo inferior derecho, sin cavitación ni absceso. Derrame pleural derecho no tabicado de escasa cuantía."
+diagnostico_correcto: "Neumonía adquirida en la comunidad, lobar inferior derecha"
+criterios_diagnosticos:
+  - "Consolidación radiológica con broncograma aéreo"
+  - "Fiebre, tos productiva y leucocitosis con neutrofilia"
+  - "Cálculo del CURB-65 para decidir ingreso: confusión, urea elevada, edad mayor de 65"
+  - "Identificación de factores de riesgo de aspiración por el antecedente de atragantamiento"
+plan_tratamiento_esperado:
+  - "Calcular CURB-65 y decidir hospitalización"
+  - "Antibioticoterapia empírica: betalactámico (ceftriaxona o amoxicilina-clavulánico) asociado a macrólido (azitromicina), o fluoroquinolona respiratoria (levofloxacino) en monoterapia"
+  - "Tomar hemocultivos y cultivo de esputo antes de iniciar el antibiótico"
+  - "Oxigenoterapia para mantener saturación por encima de 92%"
+  - "Hidratación y corrección de la hiponatremia"

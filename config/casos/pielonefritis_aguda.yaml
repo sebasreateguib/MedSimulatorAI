@@ -1,0 +1,40 @@
+id: "pielonefritis_aguda_001"
+titulo: "Pielonefritis Aguda en el Embarazo"
+dificultad: "avanzado"
+motivo_consulta: "Fiebre con escalofríos y dolor fuerte en la cintura."
+paciente:
+  nombre: "Daniela Arriaga"
+  edad: 28
+  genero: "Femenino"
+  historia_oculta: "Tiene infecciones urinarias a repetición y suele automedicarse con antibióticos que le sobraron de veces anteriores; esta vez tomó ciprofloxacino dos días antes de venir. Además tiene un atraso menstrual de siete semanas y sospecha que está embarazada, pero no se hizo la prueba y no lo menciona espontáneamente. Solo lo cuenta si se le pregunta por la fecha de la última menstruación, por posibilidad de embarazo o por automedicación."
+  sintomas:
+    - Fiebre de 39 grados con escalofríos intensos
+    - Dolor lumbar derecho con puñopercusión positiva
+    - Disuria y polaquiuria
+  estado_emocional: "Incómoda y reservada; evita el tema del embarazo hasta que se le pregunte con privacidad."
+resultados_laboratorio:
+  examen de orina: "Piuria con más de 50 leucocitos por campo, nitritos positivos, bacteriuria abundante, cilindros leucocitarios"
+  urocultivo: "Escherichia coli con más de 100.000 UFC/mL, sensible a cefalosporinas de tercera generación, resistente a ciprofloxacino"
+  hemograma: "Leucocitos 19.200/mm3 con neutrofilia"
+  proteina c reactiva: "210 mg/L"
+  funcion renal: "Urea 32 mg/dL, creatinina 0.7 mg/dL"
+  electrolitos: "Dentro de rangos normales"
+  prueba de embarazo: "Subunidad beta de gonadotropina coriónica positiva. Gestación estimada de 7 semanas."
+hallazgos_ecg: "Ritmo sinusal a 110 lpm, sin alteraciones."
+estudios:
+  ecografia abdominal: "Riñón derecho aumentado de tamaño con pérdida de la diferenciación corticomedular. Sin litiasis, sin hidronefrosis, sin colecciones ni absceso. Útero grávido con saco gestacional único acorde a 7 semanas."
+diagnostico_correcto: "Pielonefritis aguda derecha en una paciente embarazada de 7 semanas"
+criterios_diagnosticos:
+  - "Fiebre con escalofríos, dolor lumbar y puñopercusión positiva"
+  - "Piuria con nitritos positivos y urocultivo con más de 100.000 UFC/mL"
+  - "Cilindros leucocitarios que localizan la infección en el parénquima renal"
+  - "Confirmación del embarazo antes de elegir el antibiótico, que cambia por completo la conducta"
+  - "Ecografía que descarta obstrucción y absceso como complicación"
+plan_tratamiento_esperado:
+  - "Solicitar prueba de embarazo antes de prescribir cualquier antibiótico"
+  - "Tomar urocultivo y hemocultivos antes de iniciar el tratamiento"
+  - "Antibioticoterapia intravenosa con ceftriaxona, segura durante el embarazo"
+  - "Evitar fluoroquinolonas por su contraindicación en el embarazo, y evitar también el germen resistente documentado"
+  - "Hospitalización, ya que la pielonefritis en el embarazo no se maneja de forma ambulatoria"
+  - "Hidratación intravenosa y antipirético compatible con la gestación (paracetamol)"
+  - "Control obstétrico y urocultivo de seguimiento tras completar el tratamiento"

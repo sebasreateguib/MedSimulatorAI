@@ -27,22 +27,6 @@ export function MensajeMaterial({ mensaje, onAbrirCita }: Props) {
         )}
         {streaming && <span className="cursor" aria-label="escribiendo" />}
       </div>
-
-      {esTutor && !streaming && citas.length > 0 && (
-        <ul className="citas">
-          {citas.map((cita) => (
-            <li key={cita.n}>
-              <button type="button" className="citas__item" onClick={() => onAbrirCita(cita)}>
-                <span className="citas__n mono">{cita.n}</span>
-                <span className="citas__fuente">
-                  {cita.fuente}
-                  {cita.pagina ? `, pág. ${cita.pagina}` : ''}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
     </article>
   )
 }
